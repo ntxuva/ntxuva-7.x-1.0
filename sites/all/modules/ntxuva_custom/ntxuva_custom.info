@@ -1,0 +1,4 @@
+name = Ntxuva Custom
+core = 7.x
+package = Ntxuva
+dependencies[] = ntxuva_audio_reports

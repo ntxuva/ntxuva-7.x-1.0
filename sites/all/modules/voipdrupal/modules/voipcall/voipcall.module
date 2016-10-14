@@ -1,0 +1,1198 @@
+<?php
+
+define('VOIP_MAX_SMS_INTERVAL' , 10);
+
+/**
+ * @file
+ * Implementation of core functionality associated with voip calls
+ */
+foreach (array('voipscript.inc', 'voipcall.inc', 'voipsession.inc', 'voipvoice.inc') as $file) {
+  require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . $file);
+}
+/**
+ * Public functions
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function voipcall_menu() {
+  $items = array();
+
+  $items['admin/voip/call/settings'] = array(
+    'title' => 'Default call configuration',
+    'description' => 'Defines default parameters used in VoIP Drupal calls.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('voipcall_admin_form', NULL),
+    'access arguments' => array('administer voipcall setup'),
+  );
+
+  $items['admin/voip/call/log'] = array(
+    'title' => 'VoIP Call Log',
+    'description' => 'Lists all VoIP Drupal calls.',
+    'page callback' => 'voipcall_call_log',
+    'access arguments' => array('administer voipcall setup'),
+  );
+
+  $items['admin/voip/session/log'] = array(
+    'title' => 'VoIP Session Log',
+    'description' => 'Lists all VoIP Drupal sessions.',
+    'page callback' => 'voipcall_session_log',
+    'access arguments' => array('administer voipcall setup'),
+  );
+
+  $items['voipcall/%'] = array(
+    'title callback' => 'voipcall_call_page_title',
+    'title arguments' => array(1),
+    'description' => 'Lists individual VoIP Drupal calls.',
+    'page callback' => 'voipcall_call_page',
+    'page arguments' => array(1),
+    'access arguments' => array('administer voipcall setup'),
+  );
+
+  $items['voipsession/delete/%'] = array(
+    'title' => 'VoIP Delete Session',
+    'description' => 'Delete voip session.',
+    'page callback' => 'voipcall_session_delete',
+    'page arguments' => array(2),
+    'access arguments' => array('administer voipcall setup'),
+  );
+
+  $items['voip/sound/beep'] = array(
+    'title' => 'Beep sound',
+    'description' => 'Plays beep sound',
+    'page callback' => 'voipcall_play_beep',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_permission().
+ */
+function voipcall_permission() {
+  return array(
+    'administer voipcall setup' => array(
+      'title' => t('administer voipcall setup'),
+      'description' => t('administer voipcall setup'),
+    ),
+    'Use PHP input for VoIP Script (dangerous - grant with care)' => array(
+      'title' => t('Use PHP input for VoIP Script (dangerous - grant with care)'),
+      'description' => '',
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_views_api().
+ */
+function voipcall_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'voipcall') . '/views',
+  );
+}
+
+/**
+ * Implementation of hook_block_info()
+ */
+function voipcall_block_info() {
+  $blocks['voipcall_config'] = array(
+    'info' => t('VoIP Drupal Default call configuration'),
+    // DRUPAL_CACHE_PER_ROLE will be assumed.
+  );
+  return $blocks;
+}
+
+/**
+ * Implementation of hook_block_view()
+ */
+function voipcall_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'voipcall_config':
+      if (user_access('administer voipcall setup')) {
+      $block = array(
+        'subject' => t('VoIP Drupal call configuration'),
+        'content' =>  drupal_get_form('voipcall_block_form'),
+      );
+      }
+      break;
+  }
+  return $block;
+}
+
+function voipcall_block_form() {
+
+  $form['voipcall_inbound_call_script_name'] = array(
+    '#type' => 'select',
+    '#title' => t('Inbound call script name'),
+    '#description' => t('Script used for incoming phone calls'),
+    '#options' => VoipScript::getScriptNames(),
+    '#default_value' => variable_get('voipcall_inbound_call_script_name', 'voipcall_default_inbound_call_script'),
+  );
+
+  $form['voipcall_outbound_call_script_name'] = array(
+    '#type' => 'select',
+    '#title' => t('Outbound call script name'),
+    '#description' => t('Script used for outgoing calls'),
+    '#options' => VoipScript::getScriptNames(),
+    '#default_value' => variable_get('voipcall_outbound_call_script_name', 'voipcall_default_outbound_call_script'),
+  );
+
+  $form['voipcall_inbound_text_script_name'] = array(
+    '#type' => 'select',
+    '#title' => t('Inbound text script name'),
+    '#description' => t('Script used for incoming text messages'),
+    '#options' => VoipScript::getScriptNames(),
+    '#default_value' => variable_get('voipcall_inbound_text_script_name', 'voipcall_default_inbound_text_script'),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  return $form;
+}
+
+/**
+ * Validates the submission of the configuration form.
+ */
+function voipcall_block_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  //@todo: provide feedback directly on the affected fields...
+  $script_name = $values['voipcall_inbound_call_script_name'];
+  $script = VoipScript::loadScript($script_name);
+  if(!$script){
+    form_set_error('', t('Invalid inbound call script name: @script_name.', array('@script_name' => $script_name)));
+  }
+  $script_name = $values['voipcall_outbound_call_script_name'];
+  $script = VoipScript::loadScript($script_name);
+  if(!$script){
+    form_set_error('', t('Invalid outbound call script name: @script_name.', array('@script_name' => $script_name)));
+  }
+
+  $script_name = $values['voipcall_inbound_text_script_name'];
+  $script = VoipScript::loadScript($script_name);
+  if(!$script){
+    form_set_error('', t('Invalid inbound text script name: @script_name.', array('@script_name' => $script_name)));
+  }
+}
+
+function voipcall_block_form_submit($form, &$form_state) {
+  // store values
+  variable_set('voipcall_inbound_call_script_name', $form_state['values']['voipcall_inbound_call_script_name']);
+  variable_set('voipcall_outbound_call_script_name', $form_state['values']['voipcall_outbound_call_script_name']);
+  variable_set('voipcall_inbound_text_script_name', $form_state['values']['voipcall_inbound_text_script_name']);
+  drupal_set_message(t('The default call settings have been saved.'));
+}
+
+/**
+ * Form implementation
+ */
+function voipcall_admin_form($form, &$form_state) {
+  $form['voipcall_cid_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Caller id name'),
+    '#description' => t("Caller id name to be used in VoIP Drupal calls. Note that, in the U.S., this value is ignored and replaced by the caller name stored in the telecommunications service's database"),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#default_value' => variable_get('voipcall_cid_name', ''),
+  );
+
+  $form['voipcall_cid_number'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Caller id number'),
+    '#description' => t('Caller id number to be used in VoIP Drupal calls.
+    Number must be in the <a target="_blank" href="http://en.wikipedia.org/wiki/E.164">E.164</a> format.
+    Supported formats include:
+    <ul>
+    <li>tel: Phone Number - must be proceeded by a + and the country code (i.e. +14155551212 for a US #)</li>
+    <li>sip: SIP protocol address (i.e. sip:username@domain.com)</li>
+    </ul>
+    '),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#default_value' => variable_get('voipcall_cid_number', ''),
+    '#required' => TRUE,
+  );
+
+  $form['voipcall_text_number'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Text number'),
+    '#description' => t('Default text number.  Only used if it is different from the Caller id number.'),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#default_value' => variable_get('voipcall_text_number', ''),
+  );
+
+  $form['voipcall_inbound_call_script_name'] = array(
+    '#type' => 'select',
+    '#title' => t('Inbound call script name'),
+    '#description' => t('Name of the dialplan script to be used whenever the system receives a phone call.'),
+    '#options' => VoipScript::getScriptNames(),
+    '#default_value' => variable_get('voipcall_inbound_call_script_name', 'voipcall_default_inbound_call_script'),
+  );
+
+  $form['voipcall_outbound_call_script_name'] = array(
+    '#type' => 'select',
+    '#title' => t('Outbound call script name'),
+    '#description' => t('Name of the default dialplan script to be used in calls made by the system.'),
+    '#options' => VoipScript::getScriptNames(),
+    '#default_value' => variable_get('voipcall_outbound_call_script_name', 'voipcall_default_outbound_call_script'),
+  );
+
+  $form['voipcall_inbound_text_script_name'] = array(
+    '#type' => 'select',
+    '#title' => t('Inbound text script name'),
+    '#description' => t('Name of the dialplan script to be used whenever the system receives a text message.'),
+    '#options' => VoipScript::getScriptNames(),
+    '#default_value' => variable_get('voipcall_inbound_text_script_name', 'voipcall_default_inbound_text_script'),
+  );
+
+  $form['voipcall_advances_text_messaging'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced text messaging options'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE
+  );
+
+  if (module_exists('sms')) {
+    $disabled = FALSE;
+  }
+  else {
+    $disabled = TRUE;
+  }
+
+  $form['voipcall_advances_text_messaging']['voipcall_accept_sms_framework'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Accept incoming text messages from the SMS framework'),
+    '#default_value' => variable_get('voipcall_accept_sms_framework', 0),
+    '#disabled' => $disabled,
+  );
+
+  $form['voipcall_advances_text_messaging']['voipcall_use_sms_framework'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use SMS Framework for outgoing text messages'),
+    '#description' => t('By default, SMS messages are sent via the default VoIP server. Check this option to use the Drupal SMS Framework instead.'),
+    '#default_value' => variable_get('voipcall_use_sms_framework', 0),
+    '#disabled' => $disabled,
+  );
+
+  $form['voipcall_advances_text_messaging']['voipcall_sms_unicode'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('For outbound text messages, convert special Latin characters to their ASCII equivalent'),
+    '#description' => t('If set, this option helps reduce message size and minimize problems with some SMS carriers.'),
+    '#default_value' => variable_get('voipcall_sms_unicode', 0),
+  );
+
+  $form['voipcall_advances_text_messaging']['voipcall_default_text_handler'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default text message handler'),
+    '#description' => t('Default message text handler. For example you can use voipcall_join_text_messages() which will join multiple SMS message segments back into one message.'),
+    '#default_value' => variable_get('voipcall_default_text_handler', ''),
+  );
+
+  $form['voipcall_default_session_time'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default session duration'),
+    '#description' => t('Default session duration time in seconds.'),
+    '#default_value' => variable_get('voipcall_default_session_time', 0),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  return $form;
+}
+
+
+/**
+ * Validates the submission of the configuration form.
+ */
+function voipcall_admin_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  // @todo: provide feedback directly on the affected fields...
+  $script_name = $values['voipcall_inbound_call_script_name'];
+  $script = VoipScript::loadScript($script_name);
+  if (!$script) {
+    form_set_error('', t('Invalid inbound call script name: @script_name.', array('@script_name' => $script_name)));
+  }
+  $script_name = $values['voipcall_outbound_call_script_name'];
+  $script = VoipScript::loadScript($script_name);
+  if (!$script) {
+    form_set_error('', t('Invalid outbound call script name: @script_name.', array('@script_name' => $script_name)));
+  }
+
+  $script_name = $values['voipcall_inbound_text_script_name'];
+  $script = VoipScript::loadScript($script_name);
+  if (!$script) {
+    form_set_error('', t('Invalid inbound text script name: @script_name.', array('@script_name' => $script_name)));
+  }
+
+  if ($values['voipcall_default_session_time'] < 0) {
+    form_set_error('voipcall_default_session_time', t('Session duration time must be positive integer.'));
+  }
+
+  if ($values['voipcall_default_text_handler'] && !function_exists($values['voipcall_default_text_handler'])) {
+    form_set_error('voipcall_default_text_handler', t('Invalid text handler function: @text_handler.', array('@text_handler' => $values['voipcall_default_text_handler'])));
+  }
+}
+
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function voipcall_admin_form_submit($form, &$form_state) {
+
+  // Remove unecessary values
+  unset($form_state['values']['op'], $form_state['values']['submit'], $form_state['values']['form_token'], $form_state['values']['form_id']);
+
+  // store values
+  variable_set('voipcall_cid_name', $form_state['values']['voipcall_cid_name']);
+  variable_set('voipcall_cid_number', $form_state['values']['voipcall_cid_number']);
+  variable_set('voipcall_text_number', $form_state['values']['voipcall_text_number']);
+  variable_set('voipcall_inbound_call_script_name', $form_state['values']['voipcall_inbound_call_script_name']);
+  variable_set('voipcall_outbound_call_script_name', $form_state['values']['voipcall_outbound_call_script_name']);
+  variable_set('voipcall_accept_sms_framework', $form_state['values']['voipcall_accept_sms_framework']);
+  variable_set('voipcall_use_sms_framework', $form_state['values']['voipcall_use_sms_framework']);
+  variable_set('voipcall_sms_unicode', $form_state['values']['voipcall_sms_unicode']);
+  variable_set('voipcall_inbound_text_script_name', $form_state['values']['voipcall_inbound_text_script_name']);
+  variable_set('voipcall_default_session_time', $form_state['values']['voipcall_default_session_time']);
+  variable_set('voipcall_default_text_handler', $form_state['values']['voipcall_default_text_handler']);
+
+  drupal_set_message(t('The default call settings have been saved.'));
+
+  $form_state['redirect'] = 'admin/voip';
+}
+
+
+/*
+ * Script-related functions
+ */
+
+/**
+ * Return the name of the default script to be used with new incoming calls
+ */
+function voipcall_get_default_inbound_call_script_name() {
+  $script_name = variable_get('voipcall_inbound_call_script_name', 'voipcall_default_inbound_call_script');
+  return $script_name;
+}
+
+/**
+ * Return the name of the default script to be used with new outgoing calls
+ */
+function voipcall_get_default_outbound_call_script_name() {
+  $script_name = variable_get('voipcall_outbound_call_script_name', 'voipcall_default_outbound_call_script');
+  return $script_name;
+}
+
+/**
+ * Return the name of the default script to be used with incoming text messages
+ */
+function voipcall_get_default_inbound_text_script_name() {
+  $script_name = variable_get('voipcall_inbound_text_script_name', 'voipcall_default_inbound_text_script');
+  return $script_name;
+}
+
+/**
+ * Return the name of the default script to be used with outgoing text messages
+ */
+/*
+ function voipcall_get_default_outbound_text_script_name() {
+ $script_name = variable_get('voipcall_outbound_text_script_name', 'voipcall_default_outbound_text_script');
+ return $script_name;
+ }
+ */
+/**
+ * Implements hook_voipscript_get_script_names().
+ */
+function voipcall_voipscript_get_script_names() {
+  $script_names[] = 'voipcall_default_inbound_call_script';
+  $script_names[] = 'voipcall_default_outbound_call_script';
+  $script_names[] = 'voipcall_default_inbound_text_script';
+
+  return $script_names;
+}
+
+
+/**
+ * Implements hook_voipscript_load_script().
+ */
+function voipcall_voipscript_load_script($script_name, $options = NULL) {
+  $script = NULL;
+  switch ($script_name) {
+    default:
+      break;
+    case 'voipcall_default_inbound_call_script':
+      $script = new VoipScript('voipcall_default_inbound_call_script');
+      $script->addSay(t("Welcome to the VoIP Drupal platform!"));
+      $script->addSay(t("Bye bye."));
+      $script->addHangup();
+      break;
+    case 'voipcall_default_outbound_call_script':
+      $script = new VoipScript('voipcall_default_outbound_call_script');
+      $script->addSay(t("This is a call from the VoIP Drupal platform!"));
+      $script->addSay(t("Bye bye."));
+      $script->addHangup();
+      break;
+    case 'voipcall_default_inbound_text_script':
+      $script = new VoipScript('voipcall_default_inbound_text_script');
+      $script->addSendText(t("This is a TEXT response from the VoIP Drupal platform!"));
+      break;
+    case 'voipscript_run_ivr_menu':
+      $script = voipscript_get_run_ivr_menu_script($options);
+      break;
+  }
+  return $script;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function voipcall_theme() {
+  return array(
+    'voipcall_play_beep' => array(
+      'variables' => array(),
+    ),
+  );
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function voipcall_play_beep() {
+  print theme('voipcall_play_beep');
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function theme_voipcall_play_beep() {
+  $filename = drupal_get_path('module', 'voipcall') . '/sound/beep.mp3';
+  header('Content-Type: audio/mpeg');
+  return readfile($filename);
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function voipcall_call_log() {
+  $headers = array(
+    array(
+      'data' => t('cid'),
+      'field' => 'cid',
+      'sort' => 'desc',
+    ),
+    array(
+      'data' => t('start'),
+      'field' => 'start_time',
+    ),
+    array(
+      'data' => t('user'),
+      'field' => 'uid',
+    ),
+    array(
+      'data' => t('caller name'),
+      'field' => 'caller_name',
+    ),
+    array(
+      'data' => t('caller number'),
+      'field' => 'caller_name',
+    ),
+    array(
+      'data' => t('dest name'),
+      'field' => 'dest_name',
+    ),
+    array(
+      'data' => t('dest number'),
+      'field' => 'dest_number',
+    ),
+    array(
+      'data' => t('other'),
+    ),
+    '',
+  );
+
+  $query = db_select('voipcall', 'vc')
+  ->extend('PagerDefault')
+  ->extend('TableSort')
+  ->fields('vc', array('cid', 'start_time', 'uid', 'caller_name', 'caller_number', 'dest_name', 'dest_number'))
+  ->orderByHeader($headers)
+  ->limit(50)
+  ->execute();
+
+  $data = array();
+
+  while($tmp = $query->fetchAssoc()) {
+      $owner = user_load($tmp['uid']);
+      if (!$tmp['uid']) {
+        $tmp['uid'] = t('Anonymous');
+      }
+      else {
+        $tmp['uid'] = l($owner->name, 'user/' . $owner->name);
+      }
+      $tmp['start_time'] = format_date($tmp['start_time'], 'short');
+
+      $tmp['other'] = l('See more', 'voipcall/' . $tmp['cid']);
+      $data[] = $tmp;
+  }
+  $empty = 'No calls in the log.';
+  $output = theme('table', array('header' => $headers, 'rows' => $data, 'empty' => $empty));
+  $output .= theme('pager', array('tags' => NULL, 'element' => 0));
+  return $output;
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function voipcall_call_page($cid) {
+  $call_data = db_select('voipcall', 'vc')
+  ->fields('vc')
+  ->condition('cid' , $cid)
+  ->execute()
+  ->fetchAssoc();
+  $output = '';
+  foreach ($call_data as $label => $data) {
+    $output .= "<div><b>" . $label . ":</b> " . $data . "</div>";
+  }
+  $output .= l("Go back", "admin/voip/call/log");
+  return $output;
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function voipcall_call_page_title($arg) {
+  return "VoIP Call CID " . $arg;
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function voipcall_session_log() {
+  $headers = array(
+    array(
+      'data' => t('sid'),
+      'field' => 'sid',
+      'sort' => 'desc',
+    ),
+    array(
+      'data' => t('call_id'),
+      'field' => 'call_id',
+    ),
+    array(
+      'data' => t('origin_number'),
+      'field' => 'origin_number',
+    ),
+    array(
+      'data' => t('destination_number'),
+      'field' => 'destination_number',
+    ),
+    array(
+      'data' => t('expiration_time'),
+      'field' => 'expiration_time',
+    ),
+    array(
+      'data' => t('expiring_at'),
+      'field' => 'expiring_at',
+    ),
+    array(
+      'data' => t('delete'),
+      'field' => 'delete',
+    ),
+  );
+
+  //$sql = "SELECT * FROM {voipsession}" . tablesort_sql($headers);
+  //$limit = 50;
+  //$result = pager_query($sql, $limit);
+
+  $query = db_select('voipsession', 'v')
+    ->extend('PagerDefault')      //Pager Extender
+    ->limit(50)          // 50 results per page
+    ->extend('TableSort')         // Sorting Extender
+    ->orderByHeader($headers)   // Field to sort on is picked from $header
+    ->fields('v', array(
+      'sid',
+      'call_id',
+      'origin_number',
+      'destination_number',
+      'expiration_time',
+      'expiring_at'
+    ))
+    ->execute();
+  //$result = $query->execute()->fetchAssoc();
+
+  $output = '';
+  $data = array();
+  //if ($result) {
+    //your basic foreach loop to get the data
+    //foreach ($result as $tmp) {
+    while($tmp = $query->fetchAssoc()) {
+      $tmp['expiring_at'] = format_date($tmp['expiring_at'], 'short');
+      $tmp['call_id'] = l($tmp['call_id'], 'voipcall/' . $tmp['call_id']);
+      $tmp['delete'] = l('Delete', 'voipsession/delete/' . $tmp['sid']);
+      $data[] = $tmp;
+    }
+  //}
+  $empty = 'No Sessions in the log.';
+  $output = theme('table', array('header' => $headers, 'rows' => $data, 'empty' => $empty));
+  $output .= theme('pager', array('tags' => NULL, 'element' => 0));
+  return $output;
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function voipcall_session_delete($sid) {
+  // @todo Please review the conversion of this statement to the D7 database API syntax.
+  /* db_query("DELETE FROM {voipsession} WHERE sid=%d", $sid) */
+  db_delete('voipsession')
+  ->condition('sid', $sid)
+  ->execute();
+  $output = t("Voipsession @sid deleted. ", array('@sid' => $sid));
+  $output .= l('Go back', 'admin/voip/session/log');
+  return $output;
+}
+
+/**
+ * Implements hook_cron().
+ */
+function voipcall_cron() {
+  VoipSession::deleteExpiredSessions();
+}
+
+
+/**/
+function voipcall_get_audio_duration($file) {
+  $filepath = drupal_realpath($file->uri);
+  if (preg_match('/\.(mp3)$/i', $file->filename)) {
+    //Mp3 file
+    $mp3 = new mp3file($filepath);
+    $metadata = $mp3->get_metadata();
+    $duration = isset($metadata['Length']) ? $metadata['Length'] : 0;
+  }
+  else {
+    $duration = voipcall_get_wav_duration($filepath);
+  }
+  return $duration;
+}
+
+/*Helper function to calculate WAV lenght
+* Source: http://www.techaspirant.com/php-code-to-find-duration-of-an-audio-file/
+*/
+function voipcall_get_wav_duration($file) {
+  $fp = fopen($file, 'r');
+  $size_in_bytes = filesize($file);
+  fseek($fp, 20);
+  $rawheader = fread($fp, 16);
+  $header = unpack('vtype/vchannels/Vsamplerate/Vbytespersec/valignment/vbits',
+    $rawheader);
+  $sec = ceil($size_in_bytes/$header['bytespersec']);
+  return $sec;
+}
+
+/*Helper library to calculate MP3 length
+* Source: http://www.zedwood.com/article/127/php-calculate-duration-of-mp3
+*/
+class mp3file
+{
+  protected $block;
+  protected $blockpos;
+  protected $blockmax;
+  protected $blocksize;
+  protected $fd;
+  protected $bitpos;
+  protected $mp3data;
+  public function __construct($filename)
+  {
+    $this->powarr  = array(0=>1,1=>2,2=>4,3=>8,4=>16,5=>32,6=>64,7=>128);
+    $this->blockmax= 1024;
+
+    $this->mp3data = array();
+    $this->mp3data['Filesize'] = filesize($filename);
+
+    $this->fd = fopen($filename,'rb');
+    $this->prefetchblock();
+    $this->readmp3frame();
+  }
+  public function __destruct()
+  {
+    fclose($this->fd);
+  }
+  //-------------------
+  public function get_metadata()
+  {
+    return $this->mp3data;
+  }
+  protected function readmp3frame()
+  {
+    $iscbrmp3=true;
+    if ($this->startswithid3())
+      $this->skipid3tag();
+    else if ($this->containsvbrxing())
+    {
+      $this->mp3data['Encoding'] = 'VBR';
+      $iscbrmp3=false;
+    }
+    else if ($this->startswithpk())
+    {
+      $this->mp3data['Encoding'] = 'Unknown';
+      $iscbrmp3=false;
+    }
+
+    if ($iscbrmp3)
+    {
+      $i = 0;
+      $max=5000;
+      //look in 5000 bytes...
+      //the largest framesize is 4609bytes(256kbps@8000Hz  mp3)
+      for($i=0; $i<$max; $i++)
+      {
+        //looking for 1111 1111 111 (frame synchronization bits)
+        if ($this->getnextbyte()==0xFF)
+          if ($this->getnextbit() && $this->getnextbit() && $this->getnextbit())
+            break;
+      }
+      if ($i==$max)
+        $iscbrmp3=false;
+    }
+
+    if ($iscbrmp3)
+    {
+      $this->mp3data['Encoding'         ] = 'CBR';
+      $this->mp3data['MPEG version'     ] = $this->getnextbits(2);
+      $this->mp3data['Layer Description'] = $this->getnextbits(2);
+      $this->mp3data['Protection Bit'   ] = $this->getnextbits(1);
+      $this->mp3data['Bitrate Index'    ] = $this->getnextbits(4);
+      $this->mp3data['Sampling Freq Idx'] = $this->getnextbits(2);
+      $this->mp3data['Padding Bit'      ] = $this->getnextbits(1);
+      $this->mp3data['Private Bit'      ] = $this->getnextbits(1);
+      $this->mp3data['Channel Mode'     ] = $this->getnextbits(2);
+      $this->mp3data['Mode Extension'   ] = $this->getnextbits(2);
+      $this->mp3data['Copyright'        ] = $this->getnextbits(1);
+      $this->mp3data['Original Media'   ] = $this->getnextbits(1);
+      $this->mp3data['Emphasis'         ] = $this->getnextbits(1);
+      $this->mp3data['Bitrate'          ] = mp3file::bitratelookup($this->mp3data);
+      $this->mp3data['Sampling Rate'    ] = mp3file::samplelookup($this->mp3data);
+      $this->mp3data['Frame Size'       ] = mp3file::getframesize($this->mp3data);
+      $this->mp3data['Length'           ] = mp3file::getduration($this->mp3data,$this->tell2());
+      $this->mp3data['Length mm:ss'     ] = mp3file::seconds_to_mmss($this->mp3data['Length']);
+
+      if ($this->mp3data['Bitrate'      ]=='bad'     ||
+        $this->mp3data['Bitrate'      ]=='free'    ||
+        $this->mp3data['Sampling Rate']=='unknown' ||
+        $this->mp3data['Frame Size'   ]=='unknown' ||
+        $this->mp3data['Length'     ]=='unknown')
+        $this->mp3data = array('Filesize'=>$this->mp3data['Filesize'], 'Encoding'=>'Unknown');
+    }
+    else
+    {
+      if(!isset($this->mp3data['Encoding']))
+        $this->mp3data['Encoding'] = 'Unknown';
+    }
+  }
+  protected function tell()
+  {
+    return ftell($this->fd);
+  }
+  protected function tell2()
+  {
+    return ftell($this->fd)-$this->blockmax +$this->blockpos-1;
+  }
+  protected function startswithid3()
+  {
+    return ($this->block[1]==73 && //I
+      $this->block[2]==68 && //D
+      $this->block[3]==51);  //3
+  }
+  protected function startswithpk()
+  {
+    return ($this->block[1]==80 && //P
+      $this->block[2]==75);  //K
+  }
+  protected function containsvbrxing()
+  {
+
+    return(
+    ($this->block[37]==88  && //X 0x58
+      $this->block[38]==105 && //i 0x69
+      $this->block[39]==110 && //n 0x6E
+      $this->block[40]==103)   //g 0x67
+    );
+  }
+  protected function debugbytes()
+  {
+    for($j=0; $j<10; $j++)
+    {
+      for($i=0; $i<8; $i++)
+      {
+        if ($i==4) echo " ";
+        echo $this->getnextbit();
+      }
+      echo "<BR>";
+    }
+  }
+  protected function prefetchblock()
+  {
+    $block = fread($this->fd, $this->blockmax);
+    $this->blocksize = strlen($block);
+    $this->block = unpack("C*", $block);
+    $this->blockpos=0;
+  }
+  protected function skipid3tag()
+  {
+    $bits=$this->getnextbits(24);//ID3
+    $bits.=$this->getnextbits(24);//v.v flags
+
+    //3 bytes 1 version byte 2 byte flags
+    $arr = array();
+    $arr['ID3v2 Major version'] = bindec(substr($bits,24,8));
+    $arr['ID3v2 Minor version'] = bindec(substr($bits,32,8));
+    $arr['ID3v2 flags'        ] = bindec(substr($bits,40,8));
+    if (substr($bits,40,1)) $arr['Unsynchronisation']=true;
+    if (substr($bits,41,1)) $arr['Extended header']=true;
+    if (substr($bits,42,1)) $arr['Experimental indicator']=true;
+    if (substr($bits,43,1)) $arr['Footer present']=true;
+
+    $size = "";
+    for($i=0; $i<4; $i++)
+    {
+      $this->getnextbit();//skip this bit, should be 0
+      $size.= $this->getnextbits(7);
+    }
+
+    $arr['ID3v2 Tags Size']=bindec($size);//now the size is in bytes;
+    if ($arr['ID3v2 Tags Size'] - $this->blockmax>0)
+    {
+      fseek($this->fd, $arr['ID3v2 Tags Size']+10 );
+      $this->prefetchblock();
+      if (isset($arr['Footer present']) && $arr['Footer present'])
+      {
+        for($i=0; $i<10; $i++)
+          $this->getnextbyte();//10 footer bytes
+      }
+    }
+    else
+    {
+      for($i=0; $i<$arr['ID3v2 Tags Size']; $i++)
+        $this->getnextbyte();
+    }
+  }
+
+  protected function getnextbit()
+  {
+    if ($this->bitpos==8)
+      return false;
+
+    $b=0;
+    $whichbit = 7-$this->bitpos;
+    $mult = $this->powarr[$whichbit]; //$mult = pow(2,7-$this->pos);
+    $b = $this->block[$this->blockpos+1] & $mult;
+    $b = $b >> $whichbit;
+    $this->bitpos++;
+
+    if ($this->bitpos==8)
+    {
+      $this->blockpos++;
+
+      if ($this->blockpos==$this->blockmax) //end of block reached
+      {
+        $this->prefetchblock();
+      }
+      else if ($this->blockpos==$this->blocksize)
+      {//end of short block reached (shorter than blockmax)
+        return;//eof
+      }
+
+      $this->bitpos=0;
+    }
+    return $b;
+  }
+  protected function getnextbits($n=1)
+  {
+    $b="";
+    for($i=0; $i<$n; $i++)
+      $b.=$this->getnextbit();
+    return $b;
+  }
+  protected function getnextbyte()
+  {
+    if ($this->blockpos>=$this->blocksize)
+      return;
+
+    $this->bitpos=0;
+    $b=$this->block[$this->blockpos+1];
+    $this->blockpos++;
+    return $b;
+  }
+  //-----------------------------------------------------------------------------
+  public static function is_layer1(&$mp3) { return ($mp3['Layer Description']=='11'); }
+  public static function is_layer2(&$mp3) { return ($mp3['Layer Description']=='10'); }
+  public static function is_layer3(&$mp3) { return ($mp3['Layer Description']=='01'); }
+  public static function is_mpeg10(&$mp3)  { return ($mp3['MPEG version']=='11'); }
+  public static function is_mpeg20(&$mp3)  { return ($mp3['MPEG version']=='10'); }
+  public static function is_mpeg25(&$mp3)  { return ($mp3['MPEG version']=='00'); }
+  public static function is_mpeg20or25(&$mp3)  { return ($mp3['MPEG version']{1}=='0'); }
+  //-----------------------------------------------------------------------------
+  public static function bitratelookup(&$mp3)
+  {
+    //bits               V1,L1  V1,L2  V1,L3  V2,L1  V2,L2&L3
+    $array = array();
+    $array['0000']=array('free','free','free','free','free');
+    $array['0001']=array(  '32',  '32',  '32',  '32',   '8');
+    $array['0010']=array(  '64',  '48',  '40',  '48',  '16');
+    $array['0011']=array(  '96',  '56',  '48',  '56',  '24');
+    $array['0100']=array( '128',  '64',  '56',  '64',  '32');
+    $array['0101']=array( '160',  '80',  '64',  '80',  '40');
+    $array['0110']=array( '192',  '96',  '80',  '96',  '48');
+    $array['0111']=array( '224', '112',  '96', '112',  '56');
+    $array['1000']=array( '256', '128', '112', '128',  '64');
+    $array['1001']=array( '288', '160', '128', '144',  '80');
+    $array['1010']=array( '320', '192', '160', '160',  '96');
+    $array['1011']=array( '352', '224', '192', '176', '112');
+    $array['1100']=array( '384', '256', '224', '192', '128');
+    $array['1101']=array( '416', '320', '256', '224', '144');
+    $array['1110']=array( '448', '384', '320', '256', '160');
+    $array['1111']=array( 'bad', 'bad', 'bad', 'bad', 'bad');
+
+    $whichcolumn=-1;
+    if      (mp3file::is_mpeg10($mp3) && mp3file::is_layer1($mp3) )//V1,L1
+      $whichcolumn=0;
+    else if (mp3file::is_mpeg10($mp3) && mp3file::is_layer2($mp3) )//V1,L2
+      $whichcolumn=1;
+    else if (mp3file::is_mpeg10($mp3) && mp3file::is_layer3($mp3) )//V1,L3
+      $whichcolumn=2;
+    else if (mp3file::is_mpeg20or25($mp3) && mp3file::is_layer1($mp3) )//V2,L1
+      $whichcolumn=3;
+    else if (mp3file::is_mpeg20or25($mp3) && (mp3file::is_layer2($mp3) || mp3file::is_layer3($mp3)) )
+      $whichcolumn=4;//V2,   L2||L3
+
+    if (isset($array[$mp3['Bitrate Index']][$whichcolumn]))
+      return $array[$mp3['Bitrate Index']][$whichcolumn];
+    else
+      return "bad";
+  }
+  //-----------------------------------------------------------------------------
+  public static function samplelookup(&$mp3)
+  {
+    //bits               MPEG1   MPEG2   MPEG2.5
+    $array = array();
+    $array['00'] =array('44100','22050','11025');
+    $array['01'] =array('48000','24000','12000');
+    $array['10'] =array('32000','16000','8000');
+    $array['11'] =array('res','res','res');
+
+    $whichcolumn=-1;
+    if      (mp3file::is_mpeg10($mp3))
+      $whichcolumn=0;
+    else if (mp3file::is_mpeg20($mp3))
+      $whichcolumn=1;
+    else if (mp3file::is_mpeg25($mp3))
+      $whichcolumn=2;
+
+    if (isset($array[$mp3['Sampling Freq Idx']][$whichcolumn]))
+      return $array[$mp3['Sampling Freq Idx']][$whichcolumn];
+    else
+      return 'unknown';
+  }
+  //-----------------------------------------------------------------------------
+  public static function getframesize(&$mp3)
+  {
+    if ($mp3['Sampling Rate']>0)
+    {
+      return  ceil((144 * $mp3['Bitrate']*1000)/$mp3['Sampling Rate']) + $mp3['Padding Bit'];
+    }
+    return 'unknown';
+  }
+  //-----------------------------------------------------------------------------
+  public static function getduration(&$mp3,$startat)
+  {
+    if ($mp3['Bitrate']>0)
+    {
+      $KBps = ($mp3['Bitrate']*1000)/8;
+      $datasize = ($mp3['Filesize'] - ($startat/8));
+      $length = $datasize / $KBps;
+      return sprintf("%d", $length);
+    }
+    return "unknown";
+  }
+  //-----------------------------------------------------------------------------
+  public static function seconds_to_mmss($duration)
+  {
+    return sprintf("%d:%02d", ($duration /60), $duration %60 );
+  }
+}
+
+/*
+ * Converts special characters into ASCII equivelent if voipcall_sms_unicode is enabled
+ */
+function voipcall_special_chars($string) {
+  if (!variable_get('voipcall_sms_unicode', 0)) {
+    return $string;
+  }
+
+  if (!preg_match('/[\x80-\xff]/', $string))
+    return $string;
+  if (_voipcall_seems_utf8($string)) {
+    $chars = array(
+      // Decompositions for Latin-1 Supplement
+      chr(195).chr(128) => 'A', chr(195).chr(129) => 'A',
+      chr(195).chr(130) => 'A', chr(195).chr(131) => 'A',
+      chr(195).chr(132) => 'A', chr(195).chr(133) => 'A',
+      chr(195).chr(135) => 'C', chr(195).chr(136) => 'E',
+      chr(195).chr(137) => 'E', chr(195).chr(138) => 'E',
+      chr(195).chr(139) => 'E', chr(195).chr(140) => 'I',
+      chr(195).chr(141) => 'I', chr(195).chr(142) => 'I',
+      chr(195).chr(143) => 'I', chr(195).chr(145) => 'N',
+      chr(195).chr(146) => 'O', chr(195).chr(147) => 'O',
+      chr(195).chr(148) => 'O', chr(195).chr(149) => 'O',
+      chr(195).chr(150) => 'O', chr(195).chr(153) => 'U',
+      chr(195).chr(154) => 'U', chr(195).chr(155) => 'U',
+      chr(195).chr(156) => 'U', chr(195).chr(157) => 'Y',
+      chr(195).chr(159) => 's', chr(195).chr(160) => 'a',
+      chr(195).chr(161) => 'a', chr(195).chr(162) => 'a',
+      chr(195).chr(163) => 'a', chr(195).chr(164) => 'a',
+      chr(195).chr(165) => 'a', chr(195).chr(167) => 'c',
+      chr(195).chr(168) => 'e', chr(195).chr(169) => 'e',
+      chr(195).chr(170) => 'e', chr(195).chr(171) => 'e',
+      chr(195).chr(172) => 'i', chr(195).chr(173) => 'i',
+      chr(195).chr(174) => 'i', chr(195).chr(175) => 'i',
+      chr(195).chr(177) => 'n', chr(195).chr(178) => 'o',
+      chr(195).chr(179) => 'o', chr(195).chr(180) => 'o',
+      chr(195).chr(181) => 'o', chr(195).chr(182) => 'o',
+      chr(195).chr(182) => 'o', chr(195).chr(185) => 'u',
+      chr(195).chr(186) => 'u', chr(195).chr(187) => 'u',
+      chr(195).chr(188) => 'u', chr(195).chr(189) => 'y',
+      chr(195).chr(191) => 'y',
+      // Decompositions for Latin Extended-A
+      chr(196).chr(128) => 'A', chr(196).chr(129) => 'a',
+      chr(196).chr(130) => 'A', chr(196).chr(131) => 'a',
+      chr(196).chr(132) => 'A', chr(196).chr(133) => 'a',
+      chr(196).chr(134) => 'C', chr(196).chr(135) => 'c',
+      chr(196).chr(136) => 'C', chr(196).chr(137) => 'c',
+      chr(196).chr(138) => 'C', chr(196).chr(139) => 'c',
+      chr(196).chr(140) => 'C', chr(196).chr(141) => 'c',
+      chr(196).chr(142) => 'D', chr(196).chr(143) => 'd',
+      chr(196).chr(144) => 'D', chr(196).chr(145) => 'd',
+      chr(196).chr(146) => 'E', chr(196).chr(147) => 'e',
+      chr(196).chr(148) => 'E', chr(196).chr(149) => 'e',
+      chr(196).chr(150) => 'E', chr(196).chr(151) => 'e',
+      chr(196).chr(152) => 'E', chr(196).chr(153) => 'e',
+      chr(196).chr(154) => 'E', chr(196).chr(155) => 'e',
+      chr(196).chr(156) => 'G', chr(196).chr(157) => 'g',
+      chr(196).chr(158) => 'G', chr(196).chr(159) => 'g',
+      chr(196).chr(160) => 'G', chr(196).chr(161) => 'g',
+      chr(196).chr(162) => 'G', chr(196).chr(163) => 'g',
+      chr(196).chr(164) => 'H', chr(196).chr(165) => 'h',
+      chr(196).chr(166) => 'H', chr(196).chr(167) => 'h',
+      chr(196).chr(168) => 'I', chr(196).chr(169) => 'i',
+      chr(196).chr(170) => 'I', chr(196).chr(171) => 'i',
+      chr(196).chr(172) => 'I', chr(196).chr(173) => 'i',
+      chr(196).chr(174) => 'I', chr(196).chr(175) => 'i',
+      chr(196).chr(176) => 'I', chr(196).chr(177) => 'i',
+      chr(196).chr(178) => 'IJ',chr(196).chr(179) => 'ij',
+      chr(196).chr(180) => 'J', chr(196).chr(181) => 'j',
+      chr(196).chr(182) => 'K', chr(196).chr(183) => 'k',
+      chr(196).chr(184) => 'k', chr(196).chr(185) => 'L',
+      chr(196).chr(186) => 'l', chr(196).chr(187) => 'L',
+      chr(196).chr(188) => 'l', chr(196).chr(189) => 'L',
+      chr(196).chr(190) => 'l', chr(196).chr(191) => 'L',
+      chr(197).chr(128) => 'l', chr(197).chr(129) => 'L',
+      chr(197).chr(130) => 'l', chr(197).chr(131) => 'N',
+      chr(197).chr(132) => 'n', chr(197).chr(133) => 'N',
+      chr(197).chr(134) => 'n', chr(197).chr(135) => 'N',
+      chr(197).chr(136) => 'n', chr(197).chr(137) => 'N',
+      chr(197).chr(138) => 'n', chr(197).chr(139) => 'N',
+      chr(197).chr(140) => 'O', chr(197).chr(141) => 'o',
+      chr(197).chr(142) => 'O', chr(197).chr(143) => 'o',
+      chr(197).chr(144) => 'O', chr(197).chr(145) => 'o',
+      chr(197).chr(146) => 'OE',chr(197).chr(147) => 'oe',
+      chr(197).chr(148) => 'R',chr(197).chr(149) => 'r',
+      chr(197).chr(150) => 'R',chr(197).chr(151) => 'r',
+      chr(197).chr(152) => 'R',chr(197).chr(153) => 'r',
+      chr(197).chr(154) => 'S',chr(197).chr(155) => 's',
+      chr(197).chr(156) => 'S',chr(197).chr(157) => 's',
+      chr(197).chr(158) => 'S',chr(197).chr(159) => 's',
+      chr(197).chr(160) => 'S', chr(197).chr(161) => 's',
+      chr(197).chr(162) => 'T', chr(197).chr(163) => 't',
+      chr(197).chr(164) => 'T', chr(197).chr(165) => 't',
+      chr(197).chr(166) => 'T', chr(197).chr(167) => 't',
+      chr(197).chr(168) => 'U', chr(197).chr(169) => 'u',
+      chr(197).chr(170) => 'U', chr(197).chr(171) => 'u',
+      chr(197).chr(172) => 'U', chr(197).chr(173) => 'u',
+      chr(197).chr(174) => 'U', chr(197).chr(175) => 'u',
+      chr(197).chr(176) => 'U', chr(197).chr(177) => 'u',
+      chr(197).chr(178) => 'U', chr(197).chr(179) => 'u',
+      chr(197).chr(180) => 'W', chr(197).chr(181) => 'w',
+      chr(197).chr(182) => 'Y', chr(197).chr(183) => 'y',
+      chr(197).chr(184) => 'Y', chr(197).chr(185) => 'Z',
+      chr(197).chr(186) => 'z', chr(197).chr(187) => 'Z',
+      chr(197).chr(188) => 'z', chr(197).chr(189) => 'Z',
+      chr(197).chr(190) => 'z', chr(197).chr(191) => 's',
+      // Euro Sign
+      chr(226).chr(130).chr(172) => 'E',
+      // GBP (Pound) Sign
+      chr(194).chr(163) => '');
+    $string = strtr($string, $chars);
+  } else {
+    // Assume ISO-8859-1 if not UTF-8
+    $chars['in'] = chr(128).chr(131).chr(138).chr(142).chr(154).chr(158)
+      .chr(159).chr(162).chr(165).chr(181).chr(192).chr(193).chr(194)
+      .chr(195).chr(196).chr(197).chr(199).chr(200).chr(201).chr(202)
+      .chr(203).chr(204).chr(205).chr(206).chr(207).chr(209).chr(210)
+      .chr(211).chr(212).chr(213).chr(214).chr(216).chr(217).chr(218)
+      .chr(219).chr(220).chr(221).chr(224).chr(225).chr(226).chr(227)
+      .chr(228).chr(229).chr(231).chr(232).chr(233).chr(234).chr(235)
+      .chr(236).chr(237).chr(238).chr(239).chr(241).chr(242).chr(243)
+      .chr(244).chr(245).chr(246).chr(248).chr(249).chr(250).chr(251)
+      .chr(252).chr(253).chr(255);
+    $chars['out'] = "EfSZszYcYuAAAAAACEEEEIIIINOOOOOOUUUUYaaaaaaceeeeiiiinoooooouuuuyy";
+    $string = strtr($string, $chars['in'], $chars['out']);
+    $double_chars['in'] = array(chr(140), chr(156), chr(198), chr(208), chr(222), chr(223), chr(230), chr(240), chr(254));
+    $double_chars['out'] = array('OE', 'oe', 'AE', 'DH', 'TH', 'ss', 'ae', 'dh', 'th');
+    $string = str_replace($double_chars['in'], $double_chars['out'], $string);
+  }
+  return $string;
+}
+
+/**
+ * Checks to see if a string is utf8 encoded.
+ *
+ * @author bmorel at ssi dot fr
+ *
+ * @param string $Str The string to be checked
+ * @return bool True if $Str fits a UTF-8 model, false otherwise.
+ */
+function _voipcall_seems_utf8($Str) { # by bmorel at ssi dot fr
+  $length = strlen($Str);
+  for ($i = 0; $i < $length; $i++) {
+    if (ord($Str[$i]) < 0x80) continue; # 0bbbbbbb
+    elseif ((ord($Str[$i]) & 0xE0) == 0xC0) $n = 1; # 110bbbbb
+    elseif ((ord($Str[$i]) & 0xF0) == 0xE0) $n = 2; # 1110bbbb
+    elseif ((ord($Str[$i]) & 0xF8) == 0xF0) $n = 3; # 11110bbb
+    elseif ((ord($Str[$i]) & 0xFC) == 0xF8) $n = 4; # 111110bb
+    elseif ((ord($Str[$i]) & 0xFE) == 0xFC) $n = 5; # 1111110b
+    else return false; # Does not match any model
+    for ($j = 0; $j < $n; $j++) { # n bytes matching 10bbbbbb follow ?
+      if ((++$i == $length) || ((ord($Str[$i]) & 0xC0) != 0x80))
+        return false;
+    }
+  }
+  return true;
+}

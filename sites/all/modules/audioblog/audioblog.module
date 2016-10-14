@@ -1,0 +1,9 @@
+<?php
+// $Id$
+/**
+* @file
+* Load Audio Blog Features and Scripts.
+*/
+
+include_once 'audioblog.features.inc';
+include_once('audioblog_voip.scripts.inc');

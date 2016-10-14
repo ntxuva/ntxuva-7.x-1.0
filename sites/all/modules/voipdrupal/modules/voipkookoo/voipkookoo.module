@@ -1,0 +1,233 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Adds support for sending and receiving VoIP requests to and from KooKoo.
+ */
+module_load_include('inc', 'voipkookoo', 'includes/voipkookooscript');
+
+define('KOOKOO_SMS_NUMBER', '+919227507512');
+
+//-----------------------------------------------------------------------------
+// Public functions
+//-----------------------------------------------------------------------------
+
+/**
+ * Implements hook_voip_serverinfo().
+ */
+function voipkookoo_voipserver_info() {
+  $server = new VoipKooKooServer();
+  return $server;
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function voipkookoo_admin_form($configuration) {
+
+  $form['voipkookoo_api_key'] = array(
+    '#type' => 'password',
+    '#title' => t('KooKoo API Key'),
+    '#description' => t("The API Key provided in your KooKoo account dashboard."),
+    '#default_value' => (isset($configuration['voipkookoo_api_key']) ? $configuration['voipkookoo_api_key'] : ''),
+    '#attributes' => array('value' => $configuration['voipkookoo_api_key']),
+  );
+
+  $server = voipkookoo_voipserver_info();
+
+  $voices = VoipVoice::getVoices(NULL, NULL, NULL, $server->getId());
+  $form['voipcall_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Default voice'),
+    '#description' => t('Voice to be used in automatic text-to-speech generation.'),
+    '#options' =>  voipcall_get_voices_as_list($voices),
+    '#default_value' => $server->getDefaultVoice()->getVoiceId(),
+  );
+
+  $woman_voices =  VoipVoice::getVoices(NULL, "woman", NULL, $server->getId());
+  //$man_voices =  VoipVoice::getVoices(NULL, "man", NULL, $server->getId());
+  $form['voipcall_man_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Default man voice'),
+    '#description' => t('Man voice to be used in automatic text-to-speech generation.'),
+    //#todo: man->woman
+    '#options' =>  voipcall_get_voices_as_list($woman_voices),
+    //#todo: man->woman
+    '#default_value' => $server->getDefaultWomanVoice()->getVoiceId(),
+  );
+
+  //$woman_voices =  VoipVoice::getVoices(NULL, "woman", NULL, $server->getId());
+  $form['voipcall_woman_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Default woman voice'),
+    '#description' => t('Woman voice to be used in automatic text-to-speech generation.'),
+    '#options' =>  voipcall_get_voices_as_list($woman_voices),
+    '#default_value' => $server->getDefaultWomanVoice()->getVoiceId(),
+  );
+
+
+  $form['voipcall_sayas_enabled'] = array(
+    '#type' => 'radios',
+    '#title' => t('Voice used for number and dates'),
+    '#options' =>  array(
+      0 => 'Use default script language',
+      1 => 'Use of the KooKoo-specific voice selected below',
+    ),
+    '#default_value' => isset($configuration['voipcall_sayas_enabled']) ? $configuration['voipcall_sayas_enabled'] : 0,
+  );
+
+  //@todo: sort alphabetically
+  //KooKoo supports different voices for sayas command
+  $form['voipcall_sayas_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('KooKoo-specific voices for numbers and dates'),
+    '#description' => t('KooKoo-specific voices for numbers and dates.'),
+    '#options' =>  array(
+      'BN' => 'Benagali',
+      'EN' => 'English',
+      'GUJ' => 'Gujarati',
+      'HI' => 'Hindi',
+      'KA' => 'Kannada',
+      'ML' => 'Malayalam',
+      'MR' => 'Marathi',
+      'ORI' => 'Oriya',
+      'TN' => 'Tamil',
+      'TE' => 'Telugu',
+    ),
+    '#default_value' => $configuration['voipcall_sayas_voice_id'],
+  );
+
+
+  return $form;
+}
+
+/**
+ * Validates the submission of the configuration form.
+ */
+function voipkookoo_admin_form_validate($form, &$form_state) {
+// preserve the value of the password fields
+  $old_settings = variable_get('voip_kookoo_settings', '');
+  $field = 'voipkookoo_api_key';
+  if (!$form_state['values'][$field]) {
+    $form_state['values'][$field] = $old_settings[$field];
+  }
+
+  // Send a test request to validate the configuration of the KooKoo server
+  $values = $form_state['values'];
+  $result = VoipKooKooServer::ping($values);
+
+  if (voip_error()) {
+    form_set_error('', t('A KooKoo-related error occurred: @error', array('@error' => voip_error_message())));
+  }
+}
+
+/*
+ * Implementation of hook_menu()
+ */
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+
+require_once(dirname(__FILE__) . '/includes/voipkookoo.inc');
+
+function voipkookoo_menu() {
+  $items = array();
+
+  $items['voip/kookoo/callhandler'] = array(
+    'title' => 'VoIP KooKoo call handler',
+    'description' => 'Handles incoming calls from KooKoo.',
+    // Note: Since both incoming calls and KooKoo responses are received
+    // via the same callhandler menu, the specific call permissions are to
+    // be checked inside the call handler function itself.
+    'access callback' => TRUE,
+    'page callback' => '_voipkookoo_call_handler',
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_voip_getvoices().
+ */
+function voipkookoo_voip_getvoices($language , $gender, $is_local, $voice_provider) {
+
+  if($voice_provider && $voice_provider != 'kookoo') {
+    //Return empty if filtering by voice provider which is not kookoo
+    return array();
+  }
+  if($is_local === TRUE) {
+    //This module doesn't declare local voices
+    return array();
+  }
+
+  $voices = VoipKooKooServer::_get_available_voices();
+    //Search
+    foreach($voices as $key => $voice) {
+    if($language && $gender) {
+      //Search by language and gender
+      $genders = array($gender, 'neutral');
+      if($voice['language'] == $language && in_array($voice['voice'], $genders)) {
+        $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+      }
+    }
+    else if($language) {
+       //Search by language
+      if($voice['language'] == $language ) {
+        $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+      }
+    }
+    else if($gender) {
+       //Search by gender
+       $genders = array($gender, 'neutral');
+      if(in_array($voice['voice'], $genders)) {
+        $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+      }
+    }
+    else {
+      $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+    }
+  }
+
+  return $voipvoices;
+}
+
+/**
+ * Implements hook_voipcall_load_script().
+ */
+function voipkookoo_voipscript_load_script($script_name, $vars = NULL) {
+
+  $script = NULL;
+  switch ($script_name) {
+    case 'voipkookoo_sayas':
+      $script = new VoipKooKooScript('voipkookoo_sayas');
+      $script->addSay('Reading as date');
+      $script->addSayAs('20110721', 'date');
+      $script->addSay('Reading as number');
+      $script->addSayAs('20110721', 'number');
+      $script->addSay('Reading as digit');
+      $script->addSayAs('20110721', 'digit');
+      $script->addSay('Reading as currency');
+      $script->addSayAs('44', 'currency');
+
+      $script->addSay('Reading number in Hindi');
+      $script->addSayAs('20110721', 'number', 'HI');
+      $script->addSay('Reading digit in Tamil');
+      $script->addSayAs('20110721', 'digit', 'TN');
+      $script->addHangup();
+      break;
+  }
+
+  return $script;
+}
+
+/**
+ * Implements hook_voipscript_get_script_names().
+ */
+function voipkookoo_voipscript_get_script_names() {
+  $script_names[] = 'voipkookoo_sayas';
+  return $script_names;
+}

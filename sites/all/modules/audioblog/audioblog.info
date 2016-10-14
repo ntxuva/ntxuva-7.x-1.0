@@ -1,0 +1,23 @@
+; $Id$
+core = 7.x
+description = "create and handle Audioblog entries directly from telephones."
+name = "Audio Blog"
+package = "VoIP Drupal"
+dependencies[] = "audiorecorderfield"
+dependencies[] = "features"
+dependencies[] = "voipcall"
+dependencies[] = field_sql_storage
+dependencies[] = node
+dependencies[] = text
+features[features_api][] = api:1
+features[field][] = node-audioblog-body
+features[field][] = node-audioblog-field_audioblog_recording
+features[node][] = audioblog
+files[] = audioblog_voip.scripts.inc
+
+; Information added by drupal.org packaging script on 2013-09-30
+version = "7.x-1.0-beta4"
+core = "7.x"
+project = "audioblog"
+datestamp = "1380553315"
+

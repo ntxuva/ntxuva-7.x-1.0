@@ -1,0 +1,302 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Adds support for sending and receiving VoIP requests to and from Tropo.
+ */
+
+module_load_include('inc', 'voiptropo', 'includes/voiptropo');
+//module_load_include('inc', 'voiptropo', 'includes/voiptroposerver');
+//module_load_include('inc', 'voiptropo', 'includes/voiptroposcript');
+//Include Tropo API
+//module_load_include('php', 'voiptropo', 'tropo_webapi/tropo.class');
+
+
+//-----------------------------------------------------------------------------
+// Public functions
+//-----------------------------------------------------------------------------
+
+/**
+ * Implements hook_voip_serverinfo().
+ */
+function voiptropo_voipserver_info() {
+  $server = new VoipTropoServer();
+  return $server;
+}
+
+/**
+ * Implements hook_form().
+ */
+function voiptropo_admin_form($configuration) {
+  $form['voiptropo_account_username'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Tropo Username'),
+    '#description' => t("Your Tropo username."),
+    '#default_value' => (isset($configuration['voiptropo_account_username']) ? $configuration['voiptropo_account_username'] : ''),
+  );
+
+  $form['voiptropo_account_password'] = array(
+    '#type' => 'password',
+    '#title' => t('Tropo Password'),
+    '#description' => t("Your Tropo password."),
+    '#default_value' => (isset($configuration['voiptropo_account_password']) ? $configuration['voiptropo_account_password'] : ''),
+    '#attributes' => array('value' => $configuration['voiptropo_account_password']),
+  );
+
+  $form['voiptropo_voice_token'] = array(
+    '#type' => 'password',
+    '#title' => t('Voice Outbound Token'),
+    '#description' => t("The Voice Outbound Token provided in your Tropo application settings."),
+    '#default_value' => (isset($configuration['voiptropo_voice_token']) ? $configuration['voiptropo_voice_token'] : ''),
+    '#attributes' => array('value' => $configuration['voiptropo_voice_token']),
+  );
+
+  $form['voiptropo_sms_token'] = array(
+    '#type' => 'password',
+    '#title' => t('Messaging Outbound Token'),
+    '#description' => t("The Messaging Outbound Token provided in your Tropo application settings."),
+    '#default_value' => (isset($configuration['voiptropo_sms_token']) ? $configuration['voiptropo_sms_token'] : ''),
+    '#attributes' => array('value' => $configuration['voiptropo_sms_token']),
+  );
+
+  $server = voiptropo_voipserver_info();
+  $voices = VoipVoice::getVoices(NULL, NULL, NULL, $server->getId());
+  $form['voipcall_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Default voice'),
+    '#description' => t('Voice to be used in automatic text-to-speech generation.'),
+    //'#options' => VoipTropoServer::getVoicesList(),
+    '#options' => voipcall_get_voices_as_list($voices),
+    '#default_value' => $server->getDefaultVoice()->getVoiceId(),
+  );
+
+  $man_voices =  VoipVoice::getVoices(NULL, "man", NULL, $server->getId());
+  $form['voipcall_man_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Default man voice'),
+    '#description' => t('Man voice to be used in automatic text-to-speech generation.'),
+    '#options' => voipcall_get_voices_as_list($man_voices),
+    '#default_value' => $server->getDefaultManVoice()->getVoiceId(),
+  );
+
+  $woman_voices =  VoipVoice::getVoices(NULL, "woman", NULL, $server->getId());
+  $form['voipcall_woman_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Default woman voice'),
+    '#description' => t('Woman voice to be used in automatic text-to-speech generation.'),
+    '#options' => voipcall_get_voices_as_list($woman_voices),
+    '#default_value' => $server->getDefaultWomanVoice()->getVoiceId(),
+  );
+
+  return $form;
+}
+
+/**
+ * Validates the submission of the configuration form.
+ */
+function voiptropo_admin_form_validate($form, &$form_state) {
+// preserve existing password fields from the form
+  $old_settings = variable_get('voip_tropo_settings', '');
+  $fields = array(
+    'voiptropo_account_password',
+    'voiptropo_voice_token',
+    'voiptropo_sms_token'
+  );
+  foreach ($fields as $field) {
+    if (!$form_state['values'][$field]) {
+      $form_state['values'][$field] = $old_settings[$field];
+    }
+  }
+
+  // Send a test request to validate the configuration of the Tropo server
+  $values = $form_state['values'];
+
+  $result = VoipTropoServer::ping($values);
+
+  if (voip_error()) {
+    form_set_error('', voip_error_message());
+  }
+}
+
+/*
+ * Implementation of hook_menu()
+ */
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function voiptropo_menu() {
+  $items = array();
+
+  $items['voip/tropo/callhandler'] = array(
+    'title' => 'Voip Tropo call handler',
+    'description' => 'Handles incoming calls from Tropo.',
+    // Note: Since both incoming calls and Tropo responses are received
+    // via the same callhandler menu, the specific call permissions are to
+    // be checked inside the call handler function itself.
+    'access callback' => TRUE,
+    'page callback' => '_voiptropo_call_handler',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['voip/tropo/grammar/numeric_star_hash'] = array(
+    'title' => 'Grammar script',
+    'description' => 'Grammar script allowing the keypad input of digits, star and hash',
+    'access callback' => TRUE,
+    'page callback' => '_voiptropo_grammar_numeric_star_hash',
+    'page arguments' => array(4),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/*Generate GrXML grammar which allows digits with star and hash keys*/
+function _voiptropo_grammar_numeric_star_hash($num_digits = 1) {
+  $grxml = '<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://www.w3.org/2001/06/grammar" xml:lang="en-US" root="myRule">
+  <rule id="myRule" scope="public">
+    <item repeat="1-' . $num_digits . '">
+      <ruleref uri="#digits" />
+    </item>
+  </rule>
+  <rule id="digits">
+    <one-of>
+      <item>*</item>
+      <item>#</item>
+      <item>0</item>
+      <item>1</item>
+      <item>2</item>
+      <item>3</item>
+      <item>4</item>
+      <item>5</item>
+      <item>6</item>
+      <item>7</item>
+      <item>8</item>
+      <item>9</item>
+    </one-of>
+  </rule>
+</grammar>';
+
+  print $grxml;
+  die();
+}
+/**
+ * Implements hook_voipcall_load_script().
+ */
+function voiptropo_voipscript_load_script($script_name, $vars = NULL) {
+
+  $script = NULL;
+  switch ($script_name) {
+    case 'voiptropo_speech_recognition_demo':
+      $script = new VoipTropoScript('voiptropo_speech_recognition_demo');
+      $script->addLabel('start');
+      $choices = 'sales, support, billing';
+      $mode = 'speech';
+      $recognize_as = 'es-es';
+      $prompt = t('Please choose the department. Options are sales, support and billing.');
+      $timeout = 5;
+      $end_key = '';
+      $script->addGetVoiceInput($prompt, $choices, $mode, $recognize_as, $end_key, $timeout);
+      $script->addSet('speech', '%input_digits');
+
+      // If timeout or invalid input
+      $script->addGotoIf('invalid', "^%input_digits == ''");
+      // Else:
+      $script->addGotoIf('speak', "^%input_digits != ''");
+
+      $script->addLabel('speak');
+      $script->addSay('You said %speech');
+      $script->addGoto('end');
+
+      $script->addLabel('invalid');
+      $script->addSay('Invalid option choosed');
+
+      $script->addLabel('end');
+      $script->addSay('Goodbye');
+      $script->addHangup();
+      break;
+
+    case 'voiptropo_IM_demo':
+      //@todo: IM protocols are deprecated by Tropo
+      $script = new VoipTropoScript('voiptropo_IM_demo');
+      $text = "testing";
+      $to = "my_IM_address@hotmail.com";
+      $channel = "MSN";
+      $script->addSendText($text, $to, $channel);
+      $script->addHangup();
+      break;
+  }
+
+  return $script;
+}
+
+/**
+ * Implements hook_voipscript_get_script_names().
+ */
+function voiptropo_voipscript_get_script_names() {
+  $script_names[] = 'voiptropo_speech_recognition_demo';
+  $script_names[] = 'voiptropo_IM_demo';
+  return $script_names;
+}
+
+function json_serialize($any) {
+  return json_encode(json_wrap($any));
+}
+function json_wrap($any, $skipAssoc = false) {
+  if (!$skipAssoc && is_array($any) && is_string(key($any))) {
+    return (object) array("_PHP_ASSOC" => json_wrap($any, true));
+  }
+  if (is_array($any) || is_object($any)) {
+    foreach ($any as &$v) {
+      $v = json_wrap($v);
+    }
+  }
+  return $any;
+}
+
+/**
+ * Implements hook_voip_getvoices().
+ */
+function voiptropo_voip_getvoices($language , $gender, $is_local, $voice_provider) {
+  if($voice_provider && $voice_provider != 'tropo') {
+    //Return empty if filtering by voice provider which is not tropo
+    return array();
+  }
+
+  if($is_local === TRUE) {
+    //This module doesn't declare local voices
+    return array();
+  }
+
+  $voices = VoipTropoServer::_get_available_voices();
+    //Search
+    foreach($voices as $key => $voice) {
+    if($language && $gender) {
+      //Search by language and gender
+      $genders = array($gender, 'neutral');
+      if($voice['language'] == $language && in_array($voice['voice'], $genders)) {
+        $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+      }
+    }
+    else if($language) {
+       //Search by language
+      if($voice['language'] == $language ) {
+        $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+      }
+    }
+    else if($gender) {
+       //Search by gender
+       $genders = array($gender, 'neutral');
+      if(in_array($voice['voice'], $genders)) {
+        $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+      }
+    }
+    else {
+      $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+    }
+
+  }
+
+  return $voipvoices;
+}

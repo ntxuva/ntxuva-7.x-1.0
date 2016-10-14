@@ -1,0 +1,56 @@
+diff --git a/google_recaptcha.module b/google_recaptcha.module
+index 6a9e7a6..dfc59ff 100644
+--- a/google_recaptcha.module
++++ b/google_recaptcha.module
+@@ -23,21 +23,21 @@ function google_recaptcha_menu() {
+         'position' => 'right',
+         'weight' => 80,
+         'page callback' => 'system_admin_menu_block_page',
+-        'access arguments' => array('administer'),
++        'access arguments' => array('administer site configuration'),
+         'file' => 'system.admin.inc',
+         'file path' => drupal_get_path('module', 'system'),
+     );
+     $items['admin/config/spam_protection/google_recaptcha'] = array(
+         'title' => 'Google reCAPTCHA',
+         'page callback' => 'google_recaptcha_summary',
+-        'access arguments' => array('administer'),
++        'access arguments' => array('administer site configuration'),
+         'type' => MENU_NORMAL_ITEM,
+         'file' => 'google_recaptcha.admin.inc',
+         'weight' => 10,
+     );
+     $items['admin/config/spam_protection/google_recaptcha/summary'] = array(
+         'title' => 'Summary',
+-        'access arguments' => array('administer'),
++        'access arguments' => array('administer site configuration'),
+         'type' => MENU_DEFAULT_LOCAL_TASK,
+         'weight' => 10,
+     );
+@@ -45,7 +45,7 @@ function google_recaptcha_menu() {
+         'title' => 'Forms for protection',
+         'page callback' => 'drupal_get_form',
+         'page arguments' => array('google_recaptcha_forms'),
+-        'access arguments' => array('administer'),
++        'access arguments' => array('administer site configuration'),
+         'type' => MENU_LOCAL_TASK,
+         'file' => 'google_recaptcha.admin.inc',
+         'weight' => 20,
+@@ -54,7 +54,7 @@ function google_recaptcha_menu() {
+         'title' => 'Keys and settings',
+         'page callback' => 'drupal_get_form',
+         'page arguments' => array('google_recaptcha_keys'),
+-        'access arguments' => array('administer'),
++        'access arguments' => array('administer site configuration'),
+         'type' => MENU_LOCAL_TASK,
+         'file' => 'google_recaptcha.admin.inc',
+         'weight' => 30,
+@@ -68,7 +68,7 @@ function google_recaptcha_menu() {
+  * Set message for admin that he must enter keys (if they empty now).
+  */
+ function google_recaptcha_init() {
+-    if (user_access('administer')) {
++    if (user_access('administer site configuration')) {
+         $google_recaptcha = variable_get('google_recaptcha');
+         if (empty($google_recaptcha['public_key']) || empty($google_recaptcha['secret_key'])) {
+             drupal_set_message('

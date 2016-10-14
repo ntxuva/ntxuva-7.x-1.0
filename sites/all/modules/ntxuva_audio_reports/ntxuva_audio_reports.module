@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Ntxuva Audio Reports feature.
+ */
+
+include_once 'ntxuva_audio_reports.features.inc';

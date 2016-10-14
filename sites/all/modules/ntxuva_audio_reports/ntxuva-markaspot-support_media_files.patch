@@ -1,0 +1,15 @@
+diff --git a/profiles/markaspot/modules/mark_a_spot/modules/markaspot_open311/markaspot_open311.inc b/modules/mark_a_spot/modules/markaspot_open311/markaspot_open311.inc
+index 3ee1349..4ef263d 100644
+--- a/profiles/markaspot/modules/mark_a_spot/modules/markaspot_open311/markaspot_open311.inc
++++ b/profiles/markaspot/modules/mark_a_spot/modules/markaspot_open311/markaspot_open311.inc
+@@ -392,7 +392,9 @@ function markaspot_open311_node_map_request($node, $status, $parameters) {
+ 
+   // Media Url:
+   if (isset($node->field_image[$node->language])) {
+-    $image_uri = image_style_url("large", file_build_uri($node->field_image[$node->language][0]['filename']));
++    //Support other types of media
++    //$image_uri = image_style_url("large", file_build_uri($node->field_image[$node->language][0]['filename']));
++    $image_uri = file_create_url(file_build_uri($node->field_image[$node->language][0]['filename']));
+     $request['media_url'] = $image_uri;
+   }
+ 

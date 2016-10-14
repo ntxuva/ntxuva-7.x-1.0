@@ -1,0 +1,19 @@
+; $Id$
+name = VoIP Drupal Core 
+description = Enables communication between Drupal and VoIP servers.
+package = VoIP Drupal
+core = 7.x
+
+dependencies[] = voipcall
+
+files[] = includes/voip_error.inc
+files[] = includes/voiplogserver.inc
+files[] = includes/voipserver.inc
+
+
+; Information added by drupal.org packaging script on 2013-09-30
+version = "7.x-1.0-beta5"
+core = "7.x"
+project = "voipdrupal"
+datestamp = "1380553243"
+

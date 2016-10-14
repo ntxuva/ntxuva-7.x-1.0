@@ -1,0 +1,32 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the voiptwilio module.
+ *
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function voiptwilio_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime' || $phase == 'install') {
+    if (!extension_loaded("curl")) {
+      $requirements['twilio_curl'] = array(
+        'value' => $t('PHP Curl not installed.'),
+        'severity' => REQUIREMENT_ERROR,
+        'description' => $t("The VoIP Twilio module requires the PHP Curl extension to be installed."),
+      );
+    }
+    else {
+      $requirements['twilio_curl'] = array(
+        'value' => $t('PHP Curl is installed.'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+  }
+  $requirements['twilio_curl']['title'] = $t('VoIP Twilio');
+  return $requirements;
+}

@@ -1,0 +1,11 @@
+<?php
+/**
+ * Implementation of hook_uninstall().
+ */
+
+function voip_uninstall() {
+  //Delete module variables
+  db_delete('variable')
+    ->condition('name', 'voipserver_%%', 'LIKE')
+    ->execute();
+}

@@ -1,0 +1,346 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Enables communication between Drupal and VoIP servers.
+ */
+
+require_once(dirname(__FILE__) . '/includes/voip_error.inc');
+
+/**
+ * Make a phone call
+ *
+ * @param object $voipcall with the information about the call to be made
+ *
+ * @return boolean with TRUE in case of success or FALSE otherwise
+ */
+function voip_dial($voipcall) {
+  // make sure the user is allowed to make outbound calls
+  $allowed = user_access('make outbound calls');
+  if (!$allowed) {
+    global $user;
+    $variables['%uid'] = $user->uid;
+    $msg = 'User %uid does not have permissions to make outbound calls.';
+    watchdog('voip', $msg, $variables, WATCHDOG_WARNING);
+    return FALSE;
+  }
+
+  $voip_server = voip_default_server();
+  $response = $voip_server->dial($voipcall);
+
+  if (voip_error()) {
+    $error_message = 'Failure executing voip_dial() with %options.';
+    $variables['%options'] = print_r($voipcall, TRUE);
+    if (voip_error_message()) {
+      $error_message .= ' The server said: ' . voip_error_message();
+    }
+    watchdog('voip', $error_message, $variables, WATCHDOG_ERROR);
+  }
+
+  return $response;
+}
+
+/**
+ * Send a text message
+ *
+ * @param string $text with the body of the text
+ * @param object $voipcall with the information about the text to be made
+ * @param boolean $reply optional parameter indicating if this is a reply message
+ *
+ * @return boolean with TRUE in case of success or FALSE otherwise
+ */
+function voip_text($text, $voipcall, $reply = FALSE) {
+  // @todo : Convert to text perm.
+  // make sure the user is allowed to make outbound calls
+  $allowed = user_access('make outbound calls');
+  if (!$allowed) {
+    global $user;
+    $variables['%uid'] = $user->uid;
+    $msg = t('User %uid does not have permissions to make outbound calls or texts.');
+    watchdog('voip', $msg, $variables, WATCHDOG_WARNING);
+    return FALSE;
+  }
+
+  //Replace special chars
+  $text = voipcall_special_chars($text);
+
+  $voip_server = voip_default_server();
+  $response = $voip_server->send_text($text, $voipcall, $reply);
+
+  if (voip_error()) {
+    $error_message = 'Failure executing voip_text() with %options.';
+    $variables['%options'] = print_r($voipcall, TRUE);
+    if (voip_error_message()) {
+      $error_message .= ' The server said: ' . voip_error_message();
+    }
+    watchdog('voip', $error_message, $variables, WATCHDOG_ERROR);
+  }
+
+  return $response;
+}
+
+
+/**
+ * Hangup a phone call
+ *
+ * @param object $voipcall with the information about the call to be hangup
+ *
+ * @return boolean with TRUE in case of success or FALSE otherwise
+ */
+function voip_hangup($voipcall) {
+  // make sure the user is allowed to hangup the call
+  global $user;
+  $allowed = user_access('hangup any calls')
+         || (($user->uid == $voipcall->getUid()) && user_access('hangup own calls'));
+  if (!$allowed) {
+    $variables['%uid'] = $user->uid;
+    $msg = 'User %uid does not have permissions to hangup calls.';
+    watchdog('voip', $msg, $variables, WATCHDOG_WARNING);
+    return FALSE;
+  }
+
+  $voip_server = voip_default_server();
+  $response = $voip_server->hangup($voipcall);
+
+  if (voip_error()) {
+    $error_message = 'Failure executing voip_hangup() with %options.';
+    $variables['%options'] = print_r($voipcall, TRUE);
+    if (voip_error_message()) {
+      $error_message .= ' The server said: ' . voip_error_message();
+    }
+    watchdog('voip', $error_message, $variables, WATCHDOG_ERROR);
+  }
+
+  return $response;
+}
+
+/**
+ * Common entry-point function for text handling.
+ *
+ * @param text_content with the text body
+ *
+ * @return
+ */
+function voip_text_handler($text_content, $origin, $destination, $time, $network = 'sms', $server_name = '') {
+
+  $voip_server = voip_default_server();
+  $response = $voip_server->text_handler($text_content, $origin, $destination, $time, $network, $server_name);
+
+  if (voip_error()) {
+    $error_message = 'Failure executing voip_text_handler() with %options.';
+    $variables['%options'] = "$text_content, $origin ,$destination, $time, $network, $server_name";
+    if (voip_error_message()) {
+      $error_message .= ' The server said: ' . voip_error_message();
+    }
+    watchdog('voip', $error_message, $variables, WATCHDOG_ERROR);
+  }
+
+  return $response;
+}
+
+
+/**
+ * Implements hook_sms_incoming().
+ */
+function voip_sms_incoming($op, $number, $message, $options) {
+  if ($op == 'process') {
+    if (voip_debug()) {
+      $msg = "in voip_sms_incoming() with number: $number and message: $message options: ".print_r($options, true);
+      watchdog('voipcall', $msg);
+    }
+
+    $accept_sms_framework = variable_get('voipcall_accept_sms_framework', 0);
+    if($accept_sms_framework) {
+      //Accept incoming text messages from SMS Framework only if flag is set.
+      $gateway_number = isset($options['gw_number']) ? VoipCall::NormalizeNumber($options['gw_number']) : '';
+
+      // will call all modules implementing hook_voip_number_alter
+      $op = 'e.164';
+      drupal_alter('voip_number', $number, $op, $options['gw_number']);
+      voip_text_handler($message, $number, $gateway_number, REQUEST_TIME);
+    }
+  }
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function voip_menu() {
+  $items = array();
+
+  $items['admin/voip'] = array(
+    'title' => 'VoIP Drupal',
+    'description' => 'Control how your site interacts with VoIP servers.',
+    'position' => 'right',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer voip drupal framework'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
+  $items['admin/voip/servers'] = array(
+    'title' => 'VoIP server configuration',
+    'description' => 'Configure VoIP servers and choose the default server.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('voip_admin_default_form', NULL),
+    'access arguments' => array('administer voip drupal framework'),
+    'file' => 'voip.admin.inc',
+  );
+
+  $items['admin/voip/servers/%'] = array(
+    'title callback' => 'voip_admin_server_title',
+    'title arguments' => array(3),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('voip_admin_server_form', 3),
+    'access arguments' => array('administer voip drupal framework'),
+    'type' => MENU_CALLBACK,
+    'file' => 'voip.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function voip_permission() {
+  return array(
+    'administer voip drupal framework' => array(
+      'title' => t('administer voip drupal framework'),
+      'description' => t('TODO Add a description for \'administer voip drupal framework\''),
+    ),
+    'hangup any calls' => array(
+      'title' => t('hangup any calls'),
+      'description' => t('TODO Add a description for \'hangup any calls\''),
+    ),
+    'hangup own calls' => array(
+      'title' => t('hangup own calls'),
+      'description' => t('TODO Add a description for \'hangup own calls\''),
+    ),
+    'make outbound calls' => array(
+      'title' => t('make outbound calls'),
+      'description' => t('TODO Add a description for \'make outbound calls\''),
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function voip_theme() {
+  $items['voip_admin_default_form'] =
+       array('render element' => 'form');
+
+  return $items;
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Works off queue, but if item return false it doesn't delete it.
+ * Allowing for item to be released and tried again later.
+ */
+function voip_cron() {
+  $queue = DrupalQueue::get('voipdrupal_audiofilemover');
+  $end = time() + 15;
+  while (time() < $end && ($item = $queue->claimItem())) {
+    if (_voip_audiofilemover_callback($item->data)) {
+      $queue->deleteItem($item);
+    }
+    else {
+      $item->data['retries']++;
+      if ($item->data['retries'] > 2) {
+        // Still delete item, been tried again and it is still not working.
+        $queue->deleteItem($item);
+      }
+      else {
+        // Store retry count.
+        db_update('queue')->fields(
+          array(
+          'data' => serialize($item->data),
+        ))
+        ->condition('item_id', $item->item_id)
+        ->execute();
+      }
+    }
+  }
+}
+
+
+/**
+ * Internal functions
+ */
+
+/**
+ * Queue cron worker callback.
+ *
+ * @see VoipServer::audioFileMover().
+ */
+function _voip_audiofilemover_callback($item) {
+  $filename = basename($item['audio_url']);
+  $file_destination = file_destination(file_default_scheme() . '://' . $filename, FILE_EXISTS_RENAME);
+  if ($data = @file_get_contents($item['audio_url'])) {
+    $file = file_save_data($data, $file_destination);
+    $item['callback_function']($file, $item['audio_url'], $item['args']);
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Voip server menu title callback.
+ */
+function voip_admin_server_title($server_id) {
+  $server = VoipServer::getServer($server_id);
+  return sprintf('%s server', $server->getName());
+}
+
+/**
+ * Returns the current default voip server.
+ */
+function voip_default_server() {
+  $server_id = variable_get('voip_default_server', 'log');
+  $server = VoipServer::getServer($server_id);
+  return $server;
+}
+
+/**
+ * Implements hook_voipserver_info().
+ *
+ * Note - Moved here so it can be discovered by @see module_implements(). An alternative would have been
+ *   @see hook_hook_info() but that would require changing file names which is probably a good idea but not
+ *   on my todo list right now.
+ */
+function voip_voipserver_info() {
+  $server = new VoipLogServer();
+  return $server;
+}
+
+/**
+ * Implements hook_voip_getvoices().
+ */
+function voip_voip_getvoices($language , $gender, $is_local, $voice_provider) {
+
+  if($voice_provider && $voice_provider != 'log') {
+    //Return empty if filtering by voice provider which is not log
+    return array();
+  }
+
+  $voice = new VoipVoice('log', 'man', 'en', 'Log only');
+  $voices['log'] = $voice;
+
+  return $voices;
+}
+
+/**
+ * Returns state of debug option
+ * To enable debugging set voip_debug variable to TRUE
+ */
+function voip_debug() {
+  return variable_get('voip_debug', FALSE);
+}

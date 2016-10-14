@@ -1,0 +1,41 @@
+<?php
+/**
+ * Implementation of hook_requirements().
+ */
+function voipplivocloud_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime' || $phase == 'install') {
+    if (!extension_loaded("curl")) {
+      $requirements['plivo_curl'] = array(
+        'severity' => REQUIREMENT_ERROR,
+        'description' => $t("The VoIP Plivo Cloud module requires the PHP Curl extension to be installed."),
+      );
+    }
+    else {
+      $requirements['plivo_curl'] = array(
+        'value' => $t('PHP Curl is installed.'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+
+    //Check that PEAR and HTTP2 is installed
+    @include_once 'HTTP/Request2.php';
+    if (!class_exists('HTTP_Request2')) {
+      $requirements['plivo_pear'] = array(
+        'severity' => REQUIREMENT_ERROR,
+        'description' => $t("The VoIP Plivo Cloud module requires the Pear package HTTP_Request2 to be installed."),
+      );
+    }
+    else {
+      $requirements['plivo_pear'] = array(
+        'value' => $t('Pear package HTTP_Request2 is installed.'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+  }
+  $requirements['plivo_curl']['title'] = $t('VoIP Plivo Cloud');
+
+  return $requirements;
+}

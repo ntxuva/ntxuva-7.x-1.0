@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Ntxuva Locations feature.
+ */
+
+include_once 'ntxuva_locations.features.inc';

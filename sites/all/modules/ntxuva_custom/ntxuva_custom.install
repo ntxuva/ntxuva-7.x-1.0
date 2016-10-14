@@ -1,0 +1,100 @@
+<?php
+/**
+ * @file
+ * Code for the Ntxuva Custom module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function ntxuva_custom_install() {
+  //Update display formatter for Reports
+  ntxuva_custom_change_reports_display();
+
+  //Revert strongarm variables
+  $feature = features_get_features('ntxuva_audio_reports');
+  $components = array_keys($feature->info['features']);
+  features_revert(array('ntxuva_audio_reports' => $components));
+}
+
+
+function ntxuva_custom_change_reports_display() {
+  $instance = array(
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'hidden',
+        'type' => 'file_rendered',
+        'weight' => '0',
+        'settings' => array(
+          'file_view_mode' => 'default',
+          'field_formatter_class' => 'img-thumbnail',
+        ),
+      ),
+      'full' => array(
+        'label' => 'above',
+        'module' => 'image',
+        'settings' => array(
+          'field_formatter_class' => '',
+          'image_link' => 'file',
+          'image_style' => 'medium',
+          'semantic_field_format' => 0,
+        ),
+        'type' => 'file_rendered',
+        'weight' => 2,
+      ),
+      'report_list' => array(
+        'label' => 'hidden',
+        'type' => 'file_rendered',
+        'weight' => '0',
+        'settings' => array(
+          'field_formatter_class' => 'pull-left',
+          'image_link' => '',
+          'image_style' => 'mas_thumb',
+        ),
+        'module' => 'image',
+      ),
+      'teaser' => array(
+        'label' => 'hidden',
+        'type' => 'file_rendered',
+        'weight' => '0',
+        'settings' => array(
+          'field_formatter_class' => '',
+          'image_link' => '',
+          'image_style' => 'mas_thumb',
+        ),
+        'module' => 'image',
+      ),
+    ),
+    'label' => 'Fotografia',
+    'required' => 0,
+    'settings' => array(
+      'file_directory' => '',
+      'file_extensions' => 'png gif jpg jpeg',
+      'max_filesize' => '3 MB',
+      'max_resolution' => '2048x2048',
+      'min_resolution' => '200x200',
+      'alt_field' => 0,
+      'title_field' => 0,
+      'default_image' => 0,
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'weight' => '7',
+      'type' => 'image_image',
+      'module' => 'image',
+      'active' => 1,
+      'settings' => array(
+        'progress_indicator' => 'throbber',
+        'preview_image_style' => 'medium',
+      ),
+    ),
+    'id' => '8',
+    'field_id' => '12',
+    'field_name' => 'field_image',
+    'entity_type' => 'node',
+    'bundle' => 'report',
+    'deleted' => '0',
+  );
+  field_update_instance($instance);
+}

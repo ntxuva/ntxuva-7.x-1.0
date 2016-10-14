@@ -1,0 +1,11 @@
+ ; $Id$
+
+name = "Ntxuva Open311 SMS"
+description = "Ntxuva - SMS handler for citizen reporting"
+package = "Ntxuva"
+core = 7.x
+dependencies[] = entity
+
+files[] = ntxuva_sms.module
+
+configure = admin/config/ntxuva/open311-sms

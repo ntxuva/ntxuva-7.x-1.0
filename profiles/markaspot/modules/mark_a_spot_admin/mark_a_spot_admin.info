@@ -1,0 +1,26 @@
+name = Mark-a-Spot Admin
+core = "7.x"
+package = Mark-a-Spot
+description = Views for administating reports
+
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = markaspot_stats
+dependencies[] = menu
+dependencies[] = page_manager
+dependencies[] = views
+features[ctools][] = page_manager:pages_default:1
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[menu_custom][] = management
+features[page_manager_pages][] = page_admin
+features[views_view][] = mark_a_spot_admin_comments
+features[views_view][] = mark_a_spot_admin_reports
+
+
+; Information added by drush on 2014-04-16
+version = "7.x-2.4-beta+101-dev"
+core = "7.x"
+project = "markaspot"
+datestamp = "1397666008"
+

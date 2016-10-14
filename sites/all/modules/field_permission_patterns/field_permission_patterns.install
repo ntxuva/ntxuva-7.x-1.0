@@ -1,0 +1,65 @@
+<?php
+/**
+ * @file
+ *  Install settings.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function field_permission_patterns_schema() {
+  $schema['field_permission_patterns'] = array(
+    'description' => '',
+    'export' => array(
+      'key' => 'machine_name',
+      'key name' => 'Name',
+      'primary key' => 'fppid',
+      'identifier' => 'field_permission_patterns',
+      'bulk export' => TRUE,
+      'api' => array(
+        'owner' => 'field_permission_patterns',
+        'api' => 'field_permission_patterns',
+        'minimum_version' => 1,
+        'current_version' => 1,
+      ),
+    ),
+    'fields' => array(
+      'fppid' => array(
+        'description' => '',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'type' => 'varchar',
+        'length' => 60,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'machine_name' => array(
+        'type' => 'varchar',
+        'length' => 60,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'settings' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('fppid'),
+    'unique keys' => array(
+      'machine_name' => array('machine_name'),
+    ),
+  );
+
+  return $schema;
+}

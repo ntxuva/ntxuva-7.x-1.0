@@ -1,0 +1,118 @@
+<?php
+/**
+ * Tests the functionality of the Field permission patterns module.
+ */
+class FieldPermissonPatternsTestCase extends DrupalWebTestCase {
+  protected $privileged_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Field Permission Patterns functionality test',
+      'description' => 'Ensure that the field permission patterns module works properly.',
+      'group' => 'Field Permission Patterns',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('field_permission_patterns'));
+
+    // Create and log in our privileged user.
+    $this->privileged_user = $this->drupalCreateUser(array(
+      'administer field permissions',
+      'administer nodes',
+      'bypass node access',
+      'administer content types',
+      ));
+
+    $this->drupalLogin($this->privileged_user);
+  }
+
+  /**
+   * Test the following scenario:
+   * - Create a field permission pattern.
+   * - Assign it to a field.
+   * - Check that the access settings are working.
+   * - Update the pattern.
+   * - Check that the modified field access settings has been updated.
+   */
+  public function testFieldPermissionPatternsTestFieldAccess() {
+    // Create a pattern
+    $pattern = array();
+    $pattern['label'] = $this->randomName(8);
+    $pattern['machine_name'] = strtolower($this->randomName(8));
+    $pattern['description'] = $this->randomName(16);
+    $this->generatePattern(array('authenticated user'), $pattern);
+    $this->drupalPost('admin/structure/field-permission-patterns/add', $pattern, t('Save'));
+
+    // Check that the pattern has created.
+    $this->assertText(t('@machine_name has been created.', array('@machine_name' => $pattern['machine_name'])));
+
+    // Go on the body field settings form and check that the pattern is available.
+    $this->drupalGet('admin/structure/types/manage/article/fields/body');
+    $this->assertText($pattern['label']);
+
+    $edit = array(
+      'field[field_permissions][type]' => "fpp_{$pattern['machine_name']}",
+    );
+    // Save the field settings form.
+    $this->drupalPost('admin/structure/types/manage/article/fields/body', $edit, t('Save settings'));
+    $this->assertText('Saved Body configuration.');
+
+    // Create an article.
+    $node = array(
+      'title' => $this->randomName(10),
+      'body[und][0][value]' => $this->randomString(16),
+    );
+    $this->drupalPost('node/add/article', $node, t('Save'));
+    $url = $this->getUrl();
+    $nid = preg_replace('!^.*node/(\d+)$!', '\1', $url);
+
+    // Check that body displays for authenticated users.
+    $this->drupalGet("node/$nid");
+    $this->assertText($node['body[und][0][value]']);
+
+    // Logout
+    $this->drupalGet('user/logout');
+
+    // Check that the field does not display for anonymous users.
+    $this->drupalGet("node/$nid");
+    $this->assertNoText($node['body[und][0][value]']);
+
+    // Login with a user who is able to edit the pattern.
+    $this->drupalLogin($this->privileged_user);
+
+    $this->generatePattern(array('anonymous user', 'authenticated user'), $pattern);
+    $this->drupalPost("admin/structure/field-permission-patterns/list/{$pattern['machine_name']}/editor/edit", $pattern, t('Save'));
+
+    // Logout
+    $this->drupalGet('user/logout');
+
+    // Check that the field display for anonymous users.
+    $this->drupalGet("node/$nid");
+    $this->assertText($node['body[und][0][value]']);
+
+  }
+
+  /**
+   * Generate access matrix based on the input $user_roles.
+   *
+   * @param array $user_roles
+   *  An array of user roles that should be set to give access.
+   * @param array $pattern
+   *
+   * @return array
+   */
+  private function generatePattern($user_roles = array(), &$pattern) {
+    $roles = user_roles();
+    foreach ($roles as $rid => $role_name) {
+      $pattern["field_permissions[permissions][checkboxes][$rid][create]"] = in_array($role_name, $user_roles) ? TRUE : FALSE;
+      $pattern["field_permissions[permissions][checkboxes][$rid][view]"] =  in_array($role_name, $user_roles) ? TRUE : FALSE;;
+      $pattern["field_permissions[permissions][checkboxes][$rid][view own]"] =  in_array($role_name, $user_roles) ? TRUE : FALSE;
+      $pattern["field_permissions[permissions][checkboxes][$rid][edit]"] =  in_array($role_name, $user_roles) ? TRUE : FALSE;
+      $pattern["field_permissions[permissions][checkboxes][$rid][edit own]"] =  in_array($role_name, $user_roles) ? TRUE : FALSE;
+    }
+
+    return $pattern;
+  }
+}
+?>

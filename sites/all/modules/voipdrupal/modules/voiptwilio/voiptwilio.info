@@ -1,0 +1,17 @@
+name = "VoIP Twilio"
+description = "Allows the VoIP Drupal framework to work with the Twilio service."
+package = VoIP Drupal
+core = 7.x
+
+dependencies[] = voip
+dependencies[] = voipcall
+
+files[] = includes/twilio.php
+files[] = includes/voiptwilioserver.inc
+
+; Information added by drupal.org packaging script on 2013-09-30
+version = "7.x-1.0-beta5"
+core = "7.x"
+project = "voipdrupal"
+datestamp = "1380553243"
+

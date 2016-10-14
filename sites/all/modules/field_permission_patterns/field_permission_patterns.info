@@ -1,0 +1,18 @@
+name = Field Permission Patterns
+description = Provide the ability to create predefined field permissions templates.
+core = 7.x
+package = Fields
+
+dependencies[] = "field_permissions"
+dependencies[] = "ctools"
+
+configure = admin/structure/field-permission-patterns
+
+files[] = field_permission_patterns.test
+
+; Information added by Drupal.org packaging script on 2014-02-17
+version = "7.x-1.1"
+core = "7.x"
+project = "field_permission_patterns"
+datestamp = "1392629606"
+

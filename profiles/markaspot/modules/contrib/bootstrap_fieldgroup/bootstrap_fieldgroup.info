@@ -1,0 +1,16 @@
+; $Id$
+name = Bootstrap fieldgroup
+description = Adds new fieldgroup formatters for Bootstrap nav markup, best used with a Bootstrap-based theme.
+package = Fields
+core = 7.x
+
+dependencies[] = field
+dependencies[] = ctools
+dependencies[] = field_group
+
+; Information added by Drupal.org packaging script on 2014-06-11
+version = "7.x-1.1"
+core = "7.x"
+project = "bootstrap_fieldgroup"
+datestamp = "1402528429"
+

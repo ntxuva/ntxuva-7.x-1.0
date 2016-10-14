@@ -1,0 +1,199 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Adds support for sending and receiving VoIP requests to and from Plivo.
+ */
+
+//-----------------------------------------------------------------------------
+// Public functions
+//-----------------------------------------------------------------------------
+module_load_include('inc', 'voipplivoframework', 'voipplivoframework');
+module_load_include('inc', 'voipplivoframework', 'voipplivoframeworkserver');
+/**
+ * Implements hook_voip_serverinfo().
+ */
+function voipplivoframework_voipserver_info() {
+  $server = new VoipPlivoFrameworkServer();
+  return $server;
+}
+
+function voipplivoframework_admin_form($configuration) {
+
+  $form['voipplivoframework_restapi_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Plivo REST API Url'),
+    '#description' => t("The URL of your Plivo installation. Change it only if its not installed on same server as your website."),
+    '#default_value' => isset($configuration['voipplivoframework_restapi_url']) ? $configuration['voipplivoframework_restapi_url'] : 'http://127.0.0.1:8088',
+  );
+
+  $form['voipplivoframework_account_sid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Plivo Account SID'),
+    '#description' => t("The account SID defined in your Plivo configuration."),
+    '#default_value' => isset($configuration['voipplivoframework_account_sid']) ? $configuration['voipplivoframework_account_sid'] : '',
+  );
+
+  $form['voipplivoframework_auth_token'] = array(
+    '#type' => 'password',
+    '#title' => t('Plivo Auth Token'),
+    '#description' => t("The authorization token defined in your Plivo configuration."),
+    '#default_value' => isset($configuration['voipplivoframework_auth_token']) ? $configuration['voipplivoframework_auth_token'] : '',
+    '#attributes' => array('value' => $configuration['voipplivoframework_auth_token']),
+  );
+
+  $server = voipplivoframework_voipserver_info();
+  $voices = VoipVoice::getVoices(NULL, NULL, NULL, $server->getId());
+  $form['voipcall_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Default voice'),
+    '#description' => t('Voice to be used in automatic text-to-speech generation.'),
+    '#options' => voipcall_get_voices_as_list($voices),
+    '#default_value' => $server->getDefaultVoice()->getVoiceId(),
+  );
+
+  $man_voices = VoipVoice::getVoices(NULL, "man", NULL, $server->getId());
+  $form['voipcall_man_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Default man voice'),
+    '#description' => t('Man voice to be used in automatic text-to-speech generation.'),
+    '#options' => voipcall_get_voices_as_list($man_voices),
+    '#default_value' => $server->getDefaultManVoice()->getVoiceId(),
+  );
+
+  $woman_voices = VoipVoice::getVoices(NULL, "woman", NULL, $server->getId());
+  $form['voipcall_woman_voice_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Default woman voice'),
+    '#description' => t('Woman voice to be used in automatic text-to-speech generation.'),
+    '#options' => voipcall_get_voices_as_list($woman_voices),
+    '#default_value' => $server->getDefaultWomanVoice()->getVoiceId(),
+  );
+
+  $form['voipplivoframework_config_outbound_call'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Plivo Outbound Call Parameters'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE
+  );
+
+  $form['voipplivoframework_config_outbound_call']['voipplivoframework_call_gateways'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Freeswitch Call Gateways'),
+    '#description' => t("This should be valid FreeSWITCH gateway strings separated by comma. If multiple gateways are specified, all the gateways will be tried sequentially for failover for the specified number of retries. E.g. 'user/,sofia/gateway/PSTNgateway1/,sofia/gateway/PSTNgateway2/'."),
+    '#default_value' => isset($configuration['voipplivoframework_call_gateways']) ? $configuration['voipplivoframework_call_gateways'] : 'user/',
+  );
+
+  $form['voipplivoframework_config_outbound_call']['voipplivoframework_call_gateway_codec'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Freeswitch Call Gateway Codecs'),
+    '#description' => t("Through this parameter you can choose the valid codec(s) to be used for each FreeSWITCH gateway. E.g.'PCMA,PCMU','G729,PCMU','PCMA,G729'."),
+    '#default_value' => isset($configuration['voipplivoframework_call_gateway_codec']) ? $configuration['voipplivoframework_call_gateway_codec'] : "'PCMA,PCMU'",
+  );
+
+  $form['voipplivoframework_config_outbound_call']['voipplivoframework_call_gateway_timeouts'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Freeswitch Call Gateway Timeouts'),
+    '#description' => t("gatewayTimeouts indicates the timeouts (in seconds) for each FreeSWITCH gateway. E.g 10,10,10. Here Plivo will use 10 seconds timeouts while trying to dial a call through each of the three gateways."),
+    '#default_value' => isset($configuration['voipplivoframework_call_gateway_timeouts']) ? $configuration['voipplivoframework_call_gateway_timeouts'] : '60',
+  );
+
+  $form['voipplivoframework_config_outbound_call']['voipplivoframework_call_gateway_retries'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Freeswitch Call Gateway Retries'),
+    '#description' => t("The number of times each of the gateways must be tried."),
+    '#default_value' => isset($configuration['voipplivoframework_call_gateway_retries']) ? $configuration['voipplivoframework_call_gateway_retries'] : '1',
+  );
+
+  return $form;
+}
+
+/**
+ * Validates the submission of the configuration form.
+ */
+function voipplivoframework_admin_form_validate($form, &$form_state) {
+  // preserve the value of the password fields
+  $old_settings = variable_get('voip_plivoframework_settings', '');
+  $field = 'voipplivoframework_auth_token';
+  if (!$form_state['values'][$field]) {
+    $form_state['values'][$field] = $old_settings[$field];
+  }
+
+  // Send a test request to validate the configuration of the Plivo server
+  $values = $form_state['values'];
+  $result = VoipPlivoFrameworkServer::ping($values);
+
+  if (voip_error()) {
+    form_set_error('', t('A Plivo-related error occurred: @error', array('@error' => voip_error_message())));
+  }
+}
+
+/*
+ * Implements hook_menu()
+ */
+function voipplivoframework_menu() {
+  $items = array();
+
+  $items['voip/plivoframework/callhandler'] = array(
+    'title' => t('VoIP Plivo Framework call handler'),
+    'description' => t('Handles incoming calls from Plivo Framework.'),
+    // Note: Since both incoming calls and Plivo responses are received
+    // via the same callhandler menu, the specific call permissions are to
+    // be checked inside the call handler function itself.
+    'access callback' => TRUE,
+    'page callback' => '_voipplivoframework_call_handler',
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+
+/**
+ * Implements hook_voip_getvoices().
+ */
+function voipplivoframework_voip_getvoices($language, $gender, $is_local, $voice_provider) {
+  if ($voice_provider && $voice_provider != 'plivoframework') {
+    //Return empty if filtering by voice provider which is not plivo framework
+    return array();
+  }
+  if ($is_local === TRUE) {
+    //This module doesn't declare local voices
+    return array();
+  }
+
+  $voices = VoipPlivoFrameworkServer::_get_available_voices();
+  //Search
+  foreach ($voices as $key => $voice) {
+    if ($language && $gender) {
+      $genders = array($gender, 'neutral');
+      //Search by language and gender
+      if ($voice['language'] == $language && in_array($voice['voice'], $genders)) {
+        $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+      }
+    }
+    else {
+      if ($language) {
+        //Search by language
+        if ($voice['language'] == $language) {
+          $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+        }
+      }
+      else {
+        if ($gender) {
+          //Search by gender
+          $genders = array($gender, 'neutral');
+          if (in_array($voice['voice'], $genders)) {
+            $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+          }
+        }
+        else {
+          $voipvoices[$key] = new VoipVoice($key, $voice['voice'], $voice['language'], $voice['description']);
+        }
+      }
+    }
+  }
+
+  return $voipvoices;
+}

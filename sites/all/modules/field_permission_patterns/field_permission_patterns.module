@@ -1,0 +1,260 @@
+<?php
+/**
+ * @file
+ *  This file contains every hook implementations.
+ */
+
+/**
+ * Implemented hook_ctools_plugin_directory().
+ */
+function field_permission_patterns_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'export_ui') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function field_permission_patterns_permission() {
+  module_load_include('inc', 'field_permissions', 'field_permissions.admin');
+  $perms = array();
+
+  foreach (field_info_fields() as $field) {
+    if (isset($field['field_permissions']['type'])) {
+      $machine_name = _field_permission_patterns_field_permission_is_pattern($field);
+
+      if (!empty($machine_name)) {
+        $perms += field_permissions_list_field_permissions($field);
+      }
+    }
+  }
+
+  return $perms;
+}
+
+/**
+ * Implements hook_field_access().
+ */
+function field_permission_patterns_field_access($op, $field, $entity_type, $entity, $account) {
+  if (!isset($field['field_permissions']['type'])) {
+    return;
+  }
+
+  $fppid = _field_permission_patterns_field_permission_is_pattern($field);
+  if (empty($fppid)) {
+    return;
+  }
+
+  if (!isset($entity)) {
+    return field_permissions_empty_entity_access($op, $field['field_name'], $account);
+  }
+  elseif ($op == 'view') {
+    return _field_permissions_field_view_access($field['field_name'], $entity_type, $entity, $account);
+  }
+  elseif ($op == 'edit') {
+    return _field_permissions_field_edit_access($field['field_name'], $entity_type, $entity, $account);
+  }
+}
+
+/**
+ * Implements hook_user_role_delete().
+ *
+ * Update field permission patterns after delete a role.
+ */
+function field_permission_patterns_user_role_delete($role) {
+  ctools_include('export');
+  // Load all patterns.
+  $patterns = ctools_export_load_object('field_permission_patterns');
+
+  foreach ($patterns as $pattern) {
+    // Delete $role specific settings.
+    if (!empty($pattern->settings[$role->rid])) {
+      unset($pattern->settings[$role->rid]);
+      ctools_export_crud_save('field_permission_patterns', $pattern);
+    }
+  }
+}
+
+/**
+ * Implements of hook_form_FORM_ID_alter().
+ */
+function field_permission_patterns_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
+  // Load all patterns.
+  ctools_include('export');
+  $patterns = ctools_export_load_object('field_permission_patterns');
+
+  // Move the custom permission option on the end of the list.
+  $custom_option = $form['field']['field_permissions']['type']['#options'][FIELD_PERMISSIONS_CUSTOM];
+  unset($form['field']['field_permissions']['type']['#options'][FIELD_PERMISSIONS_CUSTOM]);
+
+  foreach ($patterns as $pattern) {
+    // If the pattern has description attach it after the label.
+    $pattern_label = $pattern->label;
+    if (!empty($pattern->description)) {
+      $pattern_label .= " ($pattern->description)";
+    }
+    $form['field']['field_permissions']['type']['#options']["fpp_{$pattern->machine_name}"] = $pattern_label;
+  }
+
+  // @see https://drupal.org/node/1333910
+  settype($form['field']['field_permissions']['type']['#default_value'], 'string');
+
+  $form['field']['field_permissions']['type']['#options'][FIELD_PERMISSIONS_CUSTOM] = $custom_option;
+  $form['#submit'][] = '_field_permission_patterns_field_settings_form_submit';
+}
+
+/**
+ * Implements of hook_module_implements_alter().
+ */
+function field_permission_patterns_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'form_alter' && isset($implementations['field_permission_patterns'])) {
+    $group = $implementations['field_permission_patterns'];
+    unset($implementations['field_permission_patterns']);
+    $implementations['field_permission_patterns'] = $group;
+  }
+}
+
+/**
+ * Generate the field permission matrix form.
+ *
+ * @param $fpp
+ *  Field permission pattern object.
+ * @return $form
+ *  A render array that contains the field permission matrix form settings.
+ */
+function _field_permission_patterns_permission_matrix($fpp) {
+  $form['#theme'] = 'user_admin_permissions';
+
+  // Retrieve all role names for use in the submit handler.
+  $role_names = user_roles();
+  $form['role_names'] = array(
+    '#type' => 'value',
+    '#value' => $role_names,
+  );
+
+  // Get the default field permissions.
+  $field_permissions = _field_permission_patterns_get_default_permissions();
+
+  // Go through each field permission we will display.
+  $options = array();
+  foreach ($field_permissions as $permission => $info) {
+    $options[$permission] = '';
+    // Display the name of the permission as a form item.
+    $form['permission'][$permission] = array(
+      '#type' => 'item',
+      '#markup' => $info['title'],
+    );
+  }
+
+  // Build the checkboxes for each role.
+  foreach ($role_names as $rid => $name) {
+    $form['checkboxes'][$rid] = array(
+      '#type' => 'checkboxes',
+      '#options' => $options,
+      '#default_value' => !empty($fpp->settings[$rid]) ? $fpp->settings[$rid] : array(),
+      '#attributes' => array('class' => array('rid-' . $rid)),
+    );
+    $form['role_names'][$rid] = array('#markup' => check_plain($name), '#tree' => TRUE);
+  }
+
+  // Attach the default permissions page JavaScript.
+  $form['#attached']['js'][] = drupal_get_path('module', 'user') . '/user.permissions.js';
+
+  return $form;
+}
+
+/**
+ * Define the default field permissions.
+ *
+ * @return array
+ */
+function _field_permission_patterns_get_default_permissions() {
+  $permissions = array(
+    'create' => array(
+      'title' => t('Create own value for field'),
+    ),
+    'edit' => array(
+      'title' => t('Edit anyones value for field'),
+    ),
+    'edit own' => array(
+      'title' => t('Edit own value for field'),
+    ),
+    'view' => array(
+      'title' => t('View anyones value for field'),
+    ),
+    'view own' => array(
+      'title' => t('View own value for field'),
+    ),
+  );
+
+  return $permissions;
+}
+
+/**
+ * Form callback; Submit handler for the Field Settings form.
+ */
+function _field_permission_patterns_field_settings_form_submit($form, &$form_state) {
+  _field_permission_patterns_update_field_permissions($form_state['values']['field'], $form['#instance']['field_name']);
+}
+
+/**
+ * Determine if a field permission configuration is a pattern id.
+ *
+ * @param $field
+ *
+ * @return bool | string
+ */
+function _field_permission_patterns_field_permission_is_pattern($field) {
+  if (!empty($field['field_permissions']['type'])) {
+    $matches = array();
+    preg_match('/fpp_(?P<machine_name>\w+)/', $field['field_permissions']['type'], $matches);
+
+    if (!empty($matches) && !empty($matches['machine_name'])) {
+      return $matches['machine_name'];
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Load a field permission pattern by machine name.
+ *
+ * @param $name
+ * @return mixed
+ */
+function _field_permission_patterns_load_by_machine_name($name) {
+  ctools_include('export');
+  $patterns = ctools_export_load_object('field_permission_patterns', 'names', array('machine_name' => $name));
+  return reset($patterns);
+}
+
+/**
+ * Update field access settings based on the selected pattern.
+ *
+ * @param $field
+ * @param $field_name
+ */
+function _field_permission_patterns_update_field_permissions($field, $field_name) {
+  $machine_name = _field_permission_patterns_field_permission_is_pattern($field);
+
+  if (!empty($machine_name)) {
+    $pattern = _field_permission_patterns_load_by_machine_name($machine_name);
+
+    if (!empty($pattern)) {
+      foreach ($pattern->settings as $rid => $role_permissions) {
+        $permissions = array();
+
+        foreach ($role_permissions as $key => $value) {
+          if ($key != 'rid') {
+            $permission_name = "$key $field_name";
+            $permissions[$permission_name] = ($value) ? TRUE : FALSE;
+          }
+        }
+
+        user_role_change_permissions($rid, $permissions);
+      }
+    }
+  }
+}

@@ -1,0 +1,130 @@
+# $Id$
+#
+# LANGUAGE translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  audioblog.features.field.inc: n/a
+#  audioblog.features.inc: n/a
+#  audioblog.info: n/a
+#  audioblog_voip.scripts.inc: n/a
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: audioblog\n"
+"POT-Creation-Date: 2013-04-01 10:34+0200\n"
+"PO-Revision-Date: 2013-04-01 11:20+0100\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"X-Generator: Poedit 1.5.5\n"
+
+#: audioblog.features.field.inc:158
+msgid "Audio"
+msgstr ""
+
+#: audioblog.features.field.inc:159
+msgid "Body"
+msgstr ""
+
+#: audioblog.features.inc:13 audioblog.info:0
+msgid "Audio Blog"
+msgstr ""
+
+#: audioblog.features.inc:17
+msgid "Title"
+msgstr ""
+
+#: audioblog_voip.scripts.inc:122
+msgid "SMS from %caller_number on @date (id: %call_id)"
+msgstr ""
+
+#: audioblog_voip.scripts.inc:248
+msgid "Your Audio Blog has been saved. "
+msgstr "Su mensaje ha sido guardado."
+
+#: audioblog_voip.scripts.inc:251
+msgid "Error saving Audio Blog, please try later."
+msgstr "Error al guardar su grabación. Por favor intente de nuevo más tarde."
+
+#: audioblog_voip.scripts.inc:260
+msgid "To submit a new Blog, please text ADD followed by space and the actual blog content."
+msgstr ""
+
+#: audioblog_voip.scripts.inc:263
+msgid "Empty request."
+msgstr ""
+
+#: audioblog_voip.scripts.inc:276
+msgid "Your Blog has been added to location @link . Thanks!"
+msgstr ""
+
+#: audioblog_voip.scripts.inc:279
+msgid "Invalid request."
+msgstr ""
+
+#: audioblog_voip.scripts.inc:291
+msgid "Audioblog entry created on @datetime"
+msgstr ""
+
+#: audioblog.info:0
+msgid "create and handle Audioblog entries directly from telephones."
+msgstr ""
+
+#: audioblog.info:0
+msgid "VoIP Drupal"
+msgstr ""
+
+#: Strings wrapped in v():
+msgid "Welcome to Audio Blog."
+msgstr "Bienvenido a Audio Blog."
+
+msgid "Main menu. To listen to the latest audio blogs, press 1. To record a new audio blog press the star key. "
+msgstr "Menú principal. Para escuchar el audio más reciente, presione 1. Para grabar un nuevo audio presione el asterisco. "
+
+msgid "Invalid option selected"
+msgstr "Opción no válida."
+
+msgid "Thank you for calling. Bye bye."
+msgstr "Gracias por llamar. Hasta luego."
+
+msgid "There are no audio blogs at this time. "
+msgstr "No hay audios en este momento. "
+
+msgid "During playback, press any key to go to the audio blog menu. "
+msgstr "Durante la grabación, presione cualquier botón para ir al menú. "
+
+msgid "This audio blog was created on @date at @time"
+msgstr "El audio fue creado en el dia @date a las @time"
+
+msgid "To replay the current audio blog, press 1. To listen to the additional information about this audio blog press 2. To go to the next audio blog, press 3. To go back to the main menu, press the pound key. "
+msgstr "Para escuchar esta mensaje nuevamente, presione 1. Para escuchar más información sobre este mensaje, presione 2. Para ir al siguiente mensaje, presione 3. Para regresar al menú principal, presione el numeral."
+
+msgid "No more audio blogs to be played. "
+msgstr "No hay más audios para escuchar. "
+
+msgid "Please record your audio blog after the beep.  When done, either hang up or press the pound key for additional options."
+msgstr "Por favor, grabe su mensaje después del bip. Cuando haya acabado,  cuelgue o presione el numeral para más opciones."
+
+msgid "You said @message"
+msgstr "Usted ha grabado @message"
+
+msgid "To accept this recording, press 1.  To record it once again, press 2. To hangup, press the pound key."
+msgstr "Para aceptar su audio, presione 1. Para grabar el audio nuevamente, presione 2. Para colgar, presione el numeral."
+
+msgid "Invalid input received. "
+msgstr "Opción no válida. "
+
+msgid "About to start processing your recording."
+msgstr "Estamos procesando su grabación."
+
+msgid "Please try again."
+msgstr "Por favor intente de nuevo."
+
+msgid "No input received. "
+msgstr "Opción no válida. "
+
+msgid "Bye bye."
+msgstr "Hasta luego."

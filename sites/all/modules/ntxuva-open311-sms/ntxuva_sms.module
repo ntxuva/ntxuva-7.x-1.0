@@ -1,0 +1,263 @@
+<?php
+// ntxuva_sms.module
+/**
+ * Implements hook_menu().
+ */
+function ntxuva_sms_menu() {
+  $items = array();
+
+  $items['admin/config/ntxuva/open311-sms'] = array(
+    'title' => 'Configure Ntxuva Open311 SMS',
+    'description' => 'Settings for Ntxuva Open311 SMS Module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ntxuva_sms_form'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['ntxuva/open311-sms'] = array(
+    'access callback' => TRUE,
+    'page callback' => 'ntxuva_sms_handle',
+    'access arguments' => array('view published content'),
+    'type' => MENU_CALLBACK,
+//    'delivery callback' => 'drupal_json_output',
+  );
+
+  return $items;
+}
+
+
+/**
+ * Ntxuva Open311 SMS config settings
+ *
+ */
+function ntxuva_sms_form($form, &$form_state) {
+
+  global $base_url;
+  $ntxuva_default_endpoint = $base_url . "georeport/v2/";
+
+  $form['ntxuva_sms_secret_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Enter your secret key'),
+    '#default_value' => variable_get('ntxuva_sms_secret_key', 'ntxuva-default-password'),
+    '#size' => 50,
+    '#maxlength' => 50,
+    '#description' => t('Secret key for secure communication with Telerivet'),
+    '#required' => TRUE,
+  );
+  $form['nxtuva_open311_endpoint'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Enter Open311 GeoReport v2 endpoint'),
+    '#default_value' => variable_get('nxtuva_open311_endpoint', $ntxuva_default_endpoint),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t('Open311 GeoReport v2 API Endpoint for SMS interaction'),
+    '#required' => TRUE,
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * Ntxuva Open311 SMS Handler
+ *
+ */
+function ntxuva_sms_handle() {
+
+  if (empty($_POST)) { // check if request is ok
+      header('HTTP/1.1 403 Forbidden');
+      echo "Empty post";
+      return;
+  }
+
+  $secret = variable_get('ntxuva_sms_secret_key', "ntxuva-maputo");
+
+  if ($secret !== $_POST['secret']) { // check secret key
+        header('HTTP/1.1 403 Forbidden');
+        echo "Invalid secret provided. \n";
+        echo "Post key:" . $_POST['secret'];
+        return;
+  }
+
+  if ($_POST['event'] == 'incoming_message')
+    {
+        watchdog("ntxuva_sms", "New request: " .print_r($_POST,true)); // save request for debugging
+
+        // Check first word and decide what user wants:
+        // 1) submit a new service_request or
+        // 2) find status of an existing one.
+        $content = str_word_count($_POST['content'], 1, 'àáãéíóúóèç1234567890-');
+
+        switch($content[0]) {
+          case "estado":
+            ntxuva_sms_query_request();
+            break;
+          case "ajuda":
+            ntxuva_sms_send_help();
+            break;
+          default:
+            ntxuva_sms_create_request();
+        }
+    }
+
+  return;
+  }
+
+
+/**
+ * Deals with query from user
+ *
+ */
+  function ntxuva_sms_query_request() {
+
+    // Find out API endpint
+    global $base_url;
+    $ntxuva_default_endpoint = $base_url . "/georeport/v2/";
+    $endpoint = variable_get('nxtuva_open311_endpoint', $ntxuva_default_endpoint);
+
+    $content = str_word_count($_POST['content'], 1, 'àáãéíóúóèç1234567890-');
+
+    // Validation: Look for request_id
+    $request_id = $content[1]; // ignore the rest
+
+    $url = "http://{$endpoint}requests/{$request_id}.json";
+
+
+    // Request status from Open311 Endpoint
+    $json = file_get_contents($url);
+    $res = json_decode($json, true);
+
+    // If successful, send status
+
+    if (isset($res[0]['status'])) {
+      $reply = "Obrigado pela sua mensagem! O estado do seu pedido $request_id é: ". $res[0]['status'];
+      watchdog("ntxuva_sms", "Got response from Open311: " .print_r($res,true)); // save request for debugging
+  }
+
+    // If not, apologize
+    else {
+      $reply = "Lamentavelmente, nao conseguimos encontrar o seu pedido numero '$request_id'.";
+      watchdog("ntxuva_sms", "Didn't got response from Open311. URL: '$url' Request: '$request_id' "); // save request for debugging
+  }
+
+    // Send reply to user
+    ntxuva_sms_reply($reply);
+  }
+
+  function ntxuva_sms_create_request() {
+    global $base_url;
+    $ntxuva_default_endpoint = $base_url . "/georeport/v2/";
+    $endpoint = variable_get('nxtuva_open311_endpoint', $ntxuva_default_endpoint);
+    $url = "http://{$endpoint}requests.json";
+
+    $from_number = $_POST['from_number'];
+
+    // Store information from SMS
+    $content = str_word_count($_POST['content'], 1, 'àáãéíóúóèç1234567890-');
+
+    $location = mb_substr($content[0],0,3); // first three chars of first word are for location
+    $location_result = taxonomy_get_term_by_name($location,'points');
+
+    $service_code = mb_substr($content[0],3,2); // last two chars of first word are for category
+    // $category = $content[1];
+    // $category_result = taxonomy_get_term_by_name($category,'categories'); not needed if I use service code
+
+
+    // Validate location
+    if(empty($location_result)) {
+      $reply = "Lamentavelmente, nao conseguimos introduzir o seu pedido. O seu ponto de recolha nao foi reconhecido.";
+      ntxuva_sms_reply($reply);
+      return;
+    }
+
+    else {
+
+      $tid = key($location_result);
+      $location_result = $location_result[$tid];
+
+      $loc = entity_metadata_wrapper('taxonomy_term', $location_result);
+
+      $lat = $loc->field_lat->value();
+      $long = $loc->field_long->value();
+      if(!empty($loc->field_address_string)) $address_string = $loc->field_address_string->value();
+    }
+
+    // not needed if I use service code instead of a SMS handle for category
+
+    /* // Look for category by SMS code
+
+    if(empty($category_result)) {
+      $reply = "Lamentavelmente, nao conseguimos introduzir o seu pedido. A categoria nao foi reconhecida.";
+      ntxuva_sms_reply($reply);
+      return;
+    }
+    else {
+      $tid = key($category_result);
+      $category_result = $category_result[$tid];
+
+      $cat = entity_metadata_wrapper('taxonomy_term', $category_result);
+      $service_code = $cat->field_service_code->value();
+    } */
+
+    // Prepare JSON
+
+    $request = array(
+    'phone'      => $from_number,
+    'long'    => $long,
+    'lat'       => $lat,
+    'description' => $_POST['content'],
+    'service_code'      => $service_code,
+    'address_string'  => $address_string
+    );
+
+    $options = array(
+    'http' => array(
+    'method'  => 'POST',
+    'content' => json_encode( $request ),
+    'header'=>  "Content-Type: application/json\r\n" .
+                "Accept: application/json\r\n"
+              )
+    );
+
+    watchdog("ntxuva_sms", "Preparing JSON: " . print_r($request,true)); // save request for debugging
+
+    $context  = stream_context_create( $options );
+
+    // Send JSON POST to Submit issue
+
+    $result = file_get_contents($url, false, $context);
+    $res = json_decode($result, true);
+
+    // Define reply message
+    // If error, send verbose message to user.
+
+    if (isset($res[0]['service_request_id'])) {
+      $reply = "Obrigado pela sua mensagem! O seu pedido foi guardado com o codigo: " . $res[0]['service_request_id'];
+      ntxuva_sms_reply($reply);
+      watchdog("ntxuva_sms", "Open311: New service request succesfully submitted: " .print_r($res,true)); // save request for debugging
+    }
+
+    // If not, apologize
+    else {
+      watchdog("ntxuva_sms", "Open311: could not create request"); // save request for debugging
+      ntxuva_sms_reply("Lamentavelmente, nao conseguimos introduzir o seu pedido, por favor tente mais tarde.");
+    }
+
+    return;
+  }
+
+function ntxuva_sms_send_help() {
+  ntxuva_sms_reply("Para inserir um pedido: CODIGO_DE_OCORRENCIA COMENTARIO (OPCIONAL)\nPara consultar o estado de um pedido: ESTADO CODIGO_DE_PEDIDO\nSe tiver dificuldades com o sistema, entre em contacto connosco.");
+}
+
+function ntxuva_sms_reply($reply) {
+
+  header("Content-Type: application/json");
+  echo json_encode(array('messages' =>
+    array(
+      array('content' => $reply)
+      )
+  ));
+
+  return;
+  }
+?>

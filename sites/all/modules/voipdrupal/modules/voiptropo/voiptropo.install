@@ -1,0 +1,32 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the voiptropo module.
+ *
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function voiptropo_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime' || $phase == 'install') {
+    if (!extension_loaded("curl")) {
+      $requirements['tropo_curl'] = array(
+        'value' => $t("PHP Curl not installed."),
+        'severity' => REQUIREMENT_ERROR,
+        'description' => $t("The VoIP Tropo module requires the PHP Curl extension to be installed."),
+      );
+    }
+    else {
+      $requirements['tropo_curl'] = array(
+        'value' => $t('PHP Curl is installed.'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+  }
+  $requirements['tropo_curl']['title'] = $t('VoIP Tropo');
+  return $requirements;
+}
