@@ -47,6 +47,13 @@ function markaspot_open311_find_locations($parameters) {
     $query->propertyCondition('title', $parameters['id'], '=');
   }
 
+  if (isset($parameters['north'],$parameters['south'],$parameters['east'],$parameters['west'])) {
+    $query->propertyCondition('field_latitude', $parameters['north'], '<');
+    $query->propertyCondition('field_latitude', $parameters['south'], '>');
+    $query->propertyCondition('field_longitude', $parameters['west'], '>');
+    $query->propertyCondition('field_longitude', $parameters['east'], '<');
+  }
+
 
   if (isset($parameters['type'])) {
     $query->fieldCondition('field_location_type', 'value', $parameters['type'], '=');
