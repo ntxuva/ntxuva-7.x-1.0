@@ -48,10 +48,11 @@ function markaspot_open311_find_locations($parameters) {
   }
 
   if (isset($parameters['north'],$parameters['south'],$parameters['east'],$parameters['west'])) {
-    $query->propertyCondition('field_latitude', $parameters['north'], '<');
-    $query->propertyCondition('field_latitude', $parameters['south'], '>');
-    $query->propertyCondition('field_longitude', $parameters['west'], '>');
-    $query->propertyCondition('field_longitude', $parameters['east'], '<');
+    $query->fieldCondition('field_latitude', 'value', $parameters['north'], '<=');
+    $query->fieldCondition('field_latitude', 'value', $parameters['south'], '>=');
+    $query->fieldCondition('field_longitude', 'value', $parameters['west'], '<=');
+    $query->fieldCondition('field_longitude', 'value', $parameters['east'], '>=');
+    watchdog("open311_api", "Search square: " .print_r($parameters,true));
   }
 
 
@@ -60,6 +61,8 @@ function markaspot_open311_find_locations($parameters) {
   }
 
   $result = $query->execute();
+
+  watchdog("open311_api", "Search results: " .print_r($result,true));
 
   if ($result) {
     $nodes = array_keys($result['node']);
@@ -564,7 +567,7 @@ function markaspot_open311_request_map_node($request) {
   if (isset($request->phone)) $node->field_phone[$node->language][0]['value'] = $request->phone;
 
   // File Handling:
-  if(isset($request->media_url))  
+  if(isset($request->media_url))
     if (strstr($request->media_url, "http")) {
       $managed = TRUE;
       // Whether or not to create a Drupal file record:
