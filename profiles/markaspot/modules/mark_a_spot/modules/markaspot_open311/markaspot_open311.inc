@@ -48,10 +48,10 @@ function markaspot_open311_find_locations($parameters) {
   }
 
   if (isset($parameters['north'],$parameters['south'],$parameters['east'],$parameters['west'])) {
-    $query->fieldCondition('field_latitude', 'value', $parameters['north'], '<=');
-    $query->fieldCondition('field_latitude', 'value', $parameters['south'], '>=');
-    $query->fieldCondition('field_longitude', 'value', $parameters['west'], '<=');
-    $query->fieldCondition('field_longitude', 'value', $parameters['east'], '>=');
+    $query->fieldCondition('field_latitude', 'value', $parameters['north'], '>=');
+    $query->fieldCondition('field_latitude', 'value', $parameters['south'], '<=');
+    $query->fieldCondition('field_longitude', 'value', $parameters['west'], '>=');
+    $query->fieldCondition('field_longitude', 'value', $parameters['east'], '<=');
     watchdog("open311_api", "Search square: " .print_r($parameters,true));
   }
 
