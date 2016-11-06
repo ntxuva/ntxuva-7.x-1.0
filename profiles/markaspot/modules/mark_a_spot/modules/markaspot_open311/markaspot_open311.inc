@@ -32,7 +32,7 @@ function markaspot_open311_find_locations($parameters) {
     ->entityCondition('bundle', 'locations')
     ->propertyCondition('status', 1)
     ->addMetaData('account', user_load(1));
-  // Run the query as user 1.
+  // Run the query as user 0.
 
 
   if (isset($parameters['neighbourhood'])) {
@@ -59,6 +59,11 @@ function markaspot_open311_find_locations($parameters) {
   if (isset($parameters['type'])) {
     $query->fieldCondition('field_location_type', 'value', $parameters['type'], '=');
   }
+
+  if (isset($parameters['area'])) {
+    $query->fieldCondition('field_area', 'value', $parameters['area'], '=');
+  }
+
 
   $result = $query->execute();
 
@@ -118,7 +123,9 @@ function markaspot_open311_location_map_request($node) {
 
   $location['district'] = $node->field_district[$node->language][0]['value'];
 
-  // $location['neighbourhoods'] = $node->field_neighbourhoods[$node->language][0]['value'];
+  $location['route'] = $node->field_route[$node->language][0]['value'];
+
+  if (isset($node->field_area)) $location['area'] = $node->field_area[$node->language][0]['value'];
 
   foreach ($node->field_neighbourhood[$node->language] as $nbh) {
     $location['neighbourhood'][] = $nbh['value'];
