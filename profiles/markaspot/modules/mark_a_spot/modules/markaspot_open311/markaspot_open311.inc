@@ -32,7 +32,7 @@ function markaspot_open311_find_locations($parameters) {
     ->entityCondition('bundle', 'locations')
     ->propertyCondition('status', 1)
     ->addMetaData('account', user_load(1));
-  // Run the query as user 1.
+  // Run the query as user 0.
 
 
   if (isset($parameters['neighbourhood'])) {
@@ -48,16 +48,21 @@ function markaspot_open311_find_locations($parameters) {
   }
 
   if (isset($parameters['north'],$parameters['south'],$parameters['east'],$parameters['west'])) {
-    $query->propertyCondition('field_latitude', $parameters['north'], '<');
-    $query->propertyCondition('field_latitude', $parameters['south'], '>');
-    $query->propertyCondition('field_longitude', $parameters['west'], '>');
-    $query->propertyCondition('field_longitude', $parameters['east'], '<');
+    $query->fieldCondition('field_latitude', 'value', $parameters['north'], '>=');
+    $query->fieldCondition('field_latitude', 'value', $parameters['south'], '<=');
+    $query->fieldCondition('field_longitude', 'value', $parameters['west'], '>=');
+    $query->fieldCondition('field_longitude', 'value', $parameters['east'], '<=');
   }
 
 
   if (isset($parameters['type'])) {
     $query->fieldCondition('field_location_type', 'value', $parameters['type'], '=');
   }
+
+  if (isset($parameters['area'])) {
+    $query->fieldCondition('field_area', 'value', $parameters['area'], '=');
+  }
+
 
   $result = $query->execute();
 
@@ -107,7 +112,7 @@ function markaspot_open311_location_map_request($node) {
 
   $location['location_name'] = $node->field_location_name[$node->language][0]['value'];
 
-  $location['location_type'] = $node->field_location_type[$node->language][0]["value"];
+  $location['location_type'] = strtolower($node->field_location_type[$node->language][0]["value"]);
 
   $location['lat'] = $node->field_latitude[$node->language][0]['value'];
 
@@ -115,7 +120,9 @@ function markaspot_open311_location_map_request($node) {
 
   $location['district'] = $node->field_district[$node->language][0]['value'];
 
-  // $location['neighbourhoods'] = $node->field_neighbourhoods[$node->language][0]['value'];
+  if (isset($node->field_route[$node->language][0]['value'])) $location['route'] = $node->field_route[$node->language][0]['value'];
+
+  if (isset($node->field_area[$node->language][0])) $location['area'] = $node->field_area[$node->language][0]['value'];
 
   foreach ($node->field_neighbourhood[$node->language] as $nbh) {
     $location['neighbourhood'][] = $nbh['value'];
@@ -160,8 +167,6 @@ function markaspot_open311_requests_create($data) {
 
   $data = (object) $data;
   $service_request = array();
-
-  watchdog("open311_api", "Create request: " .print_r($data,true));
 
   // Could be more validation here:
   if (!isset($data->email) && !isset($data->phone)) {
@@ -351,6 +356,13 @@ function markaspot_open311_requests_index($page, $parameters) {
   $end_timestamp = (isset($parameters['end_date']) && $parameters['end_date'] != '') ? strtotime($parameters['end_date']) : time();
   $query->propertyCondition('created', $end_timestamp, '<=');
   $query->propertyOrderBy('created', $direction = 'DESC');
+
+  if (isset($parameters['north'],$parameters['south'],$parameters['east'],$parameters['west'])) {
+    $query->fieldCondition('field_geo', 'lat', $parameters['north'], '>=');
+    $query->fieldCondition('field_geo', 'lat', $parameters['south'], '<=');
+    $query->fieldCondition('field_geo', 'lng', $parameters['west'], '>=');
+    $query->fieldCondition('field_geo', 'lng', $parameters['east'], '<=');
+  }
 
   $result = $query->execute();
 
@@ -564,7 +576,7 @@ function markaspot_open311_request_map_node($request) {
   if (isset($request->phone)) $node->field_phone[$node->language][0]['value'] = $request->phone;
 
   // File Handling:
-  if(isset($request->media_url))  
+  if(isset($request->media_url))
     if (strstr($request->media_url, "http")) {
       $managed = TRUE;
       // Whether or not to create a Drupal file record:
