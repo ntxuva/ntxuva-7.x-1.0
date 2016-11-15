@@ -52,6 +52,10 @@ function markaspot_open311_find_locations($parameters) {
     $query->fieldCondition('field_latitude', 'value', $parameters['south'], '<=');
     $query->fieldCondition('field_longitude', 'value', $parameters['west'], '>=');
     $query->fieldCondition('field_longitude', 'value', $parameters['east'], '<=');
+<<<<<<< HEAD
+=======
+    watchdog("open311_api", "Search square: " .print_r($parameters,true));
+>>>>>>> 8f8d3834b7a41fa421ca7381cf5bd5f734646cf0
   }
 
 
@@ -65,6 +69,8 @@ function markaspot_open311_find_locations($parameters) {
 
 
   $result = $query->execute();
+
+  watchdog("open311_api", "Search results: " .print_r($result,true));
 
   if ($result) {
     $nodes = array_keys($result['node']);
@@ -120,9 +126,15 @@ function markaspot_open311_location_map_request($node) {
 
   $location['district'] = $node->field_district[$node->language][0]['value'];
 
+<<<<<<< HEAD
   if (isset($node->field_route[$node->language][0]['value'])) $location['route'] = $node->field_route[$node->language][0]['value'];
 
   if (isset($node->field_area[$node->language][0])) $location['area'] = $node->field_area[$node->language][0]['value'];
+=======
+  $location['route'] = $node->field_route[$node->language][0]['value'];
+
+  if (isset($node->field_area)) $location['area'] = $node->field_area[$node->language][0]['value'];
+>>>>>>> 8f8d3834b7a41fa421ca7381cf5bd5f734646cf0
 
   foreach ($node->field_neighbourhood[$node->language] as $nbh) {
     $location['neighbourhood'][] = $nbh['value'];
