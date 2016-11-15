@@ -375,7 +375,6 @@ function markaspot_open311_requests_index($page, $parameters) {
     // Now exploring nodes matching other parameters:
     foreach ($nodes as $node) {
       $node->language = LANGUAGE_NONE;
-
       $status = markaspot_open311_tax_map_status($node->field_status[$node->language][0]["tid"]);
       $requests[] = markaspot_open311_node_map_request($node, $status, $parameters);
       if ($node->address_id[$node->language][0]['value'] == 0) {
@@ -385,7 +384,7 @@ function markaspot_open311_requests_index($page, $parameters) {
         $results = markaspot_open311_find_locations($params);
         if($results) {
           $node->field_geo[$node->language][0]['lat'] = $results[0]['lat'];
-          $node->field_geo[$node->language][0]['lng'] = $results[0]['lon'];
+          $node->field_geo[$node->language][0]['lng'] = $results[0]['long'];
           $node->address_id[0]['value'] = 321;
           markaspot_open311_write_request($node);
         }
