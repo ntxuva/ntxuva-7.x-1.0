@@ -358,8 +358,8 @@ function markaspot_open311_requests_index($page, $parameters) {
   $query->propertyOrderBy('created', $direction = 'DESC');
 
   if (isset($parameters['north'],$parameters['south'],$parameters['east'],$parameters['west'])) {
-    $query->fieldCondition('field_geo', 'lat', $parameters['north'], '>=');
-    $query->fieldCondition('field_geo', 'lat', $parameters['south'], '<=');
+    $query->fieldCondition('field_geo', 'lat', $parameters['north'], '<=');
+    $query->fieldCondition('field_geo', 'lat', $parameters['south'], '>=');
     $query->fieldCondition('field_geo', 'lng', $parameters['west'], '>=');
     $query->fieldCondition('field_geo', 'lng', $parameters['east'], '<=');
   }
@@ -571,6 +571,8 @@ function markaspot_open311_request_map_node($request) {
     $results = markaspot_open311_find_locations($params);
     if($results) $node->field_neighbourhood[$node->language][0]['value'] = $results[0]['neighbourhood'][0];
   }
+
+  if (!isset($node->field_neighbourhood[$node->language][0]['value']) && isset($request->neighbourhood)) $node->field_neighbourhood[$node->language][0]['value'] = $request->neighbourhood;
 
   if (isset($request->email)) $node->field_e_mail[$node->language][0]['value'] = $request->email;
   if (isset($request->phone)) $node->field_phone[$node->language][0]['value'] = $request->phone;

@@ -54,13 +54,14 @@ function markaspot_logic_validate($form, &$form_state) {
   // Iterate through all strings.
   $valid = array();
 
-  foreach ($validate_cities as $validate_city) {
+/*  foreach ($validate_cities as $validate_city) {
     $valid[] = strstr($form_state['values']['field_geo'][LANGUAGE_NONE][0]['address']['field'], $validate_city) ? TRUE : FALSE;
   }
 
   if (!in_array(TRUE, $valid)) {
     form_set_error('field_geo', t('Sorry, we only operate in the following areas: @area', array('@area' => $area)));
   }
+*/
 
   /* Bounding Box */
   $lat = $form_state['values']['field_geo'][LANGUAGE_NONE][0]['lat'];
