@@ -377,18 +377,6 @@ function markaspot_open311_requests_index($page, $parameters) {
       $node->language = LANGUAGE_NONE;
       $status = markaspot_open311_tax_map_status($node->field_status[$node->language][0]["tid"]);
       $requests[] = markaspot_open311_node_map_request($node, $status, $parameters);
-      if ($node->address_id[$node->language][0]['value'] == 0) {
-        $params = array();
-        $params['type'] = 'district';
-        $params['neighbourhood'] = $node->field_neighbourhood[$node->language][0]['value'];
-        $results = markaspot_open311_find_locations($params);
-        if($results) {
-          $node->field_geo[$node->language][0]['lat'] = $results[0]['lat'];
-          $node->field_geo[$node->language][0]['lng'] = $results[0]['long'];
-          $node->address_id[0]['value'] = 321;
-          markaspot_open311_write_request($node);
-        }
-      }
     }
   }
   else {
@@ -513,6 +501,20 @@ function markaspot_open311_node_map_request($node, $status, $parameters) {
   // Non Open311 compliant fields can be added here:
 
   if (isset($node->field_neighbourhood[$node->language][0]['value'])) $request['neighbourhood'] = $node->field_neighbourhood[$node->language][0]['value'];
+
+/*  if ($node->field_address_id[$node->language][0]['value'] == 321) {
+     $params = array();
+     $params['type'] = 'district';
+     $params['neighbourhood'] = $node->field_neighbourhood[$node->language][0]['value'];
+     $results = markaspot_open311_find_locations($params);
+     if($results) {
+       $node->field_geo[$node->language][0]['lat'] = $results[0]['lat'];
+       $node->field_geo[$node->language][0]['lng'] = $results[0]['long'];
+       $node->field_address_id[$node->language][0]['value'] = '321';
+       markaspot_open311_write_request($node);
+     }
+  }
+*/
 
   if (isset($parameters['phone_key'])) if ($parameters['phone_key']==666554 && isset($node->field_phone[$node->language][0]['value'])) $request['phone'] = $node->field_phone[$node->language][0]['value'];
 
