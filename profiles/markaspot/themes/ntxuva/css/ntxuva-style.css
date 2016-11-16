@@ -2352,7 +2352,9 @@ fieldset[disabled] .btn-info.active {
 .btn-warning {
   color: #ffffff;
   background-color: #f0ad4e;
-  border-color: #eea236;
+  border-color: #eea236;  	
+  margin-left:1em;
+
 }
 .btn-warning:hover,
 .btn-warning:focus,
@@ -4217,7 +4219,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
   list-style: none;
   color: #585858;
   background: url(../images/btn_nav_add_report.png) no-repeat 0 -33px #fff;
-  width: 110px;
+  width: 142px;
   padding-left: 35px;
 }
 .navbar-inverse .navbar-nav > .disabled > a,
@@ -7059,9 +7061,9 @@ color: #000;
 
 }
 .list {
-  margin: 0 auto 0 auto;
-width: 200px;
-display: inline-block;
+   margin: 0 auto 0 auto;
+   width: 200px;
+   display: inline-block;
 }
 
 .add {
@@ -7161,7 +7163,7 @@ p:last-child {
     position: relative;
     z-index: 42;
     margin: -267px 0 0 0;
-padding: 0 0 70px 0;
+padding: 0 0 0px 0;
   }
   
   .custom-col {
@@ -7186,7 +7188,7 @@ color: #000;
 	
 	.list {
   margin: 0 auto 0 auto;
-width: 200px;
+width: 210px;
 display: inline-block;
 }
 
@@ -7319,14 +7321,14 @@ color: #000;
 
 .list {
   margin: 0 auto 0 auto;
-width: 200px;
-display: inline-block;
+  width: 250px;
+  display: inline-block;
 }
 
 .add {
   margin: 0 auto 0 auto;
-width: 200px;
-display: inline-block;
+  width: 200px;
+  display: inline-block;
 }
 .secondary-panel .left {
 	float: left;

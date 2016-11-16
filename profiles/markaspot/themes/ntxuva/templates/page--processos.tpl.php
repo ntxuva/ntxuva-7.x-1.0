@@ -3,10 +3,7 @@
  * @file
  * Map page template for Mark-a-Spot
  */
- drupal_add_library('system', 'ui.datepicker');
-drupal_add_js("(function ($) { $('.datepicker').datepicker(); })(jQuery);", array('type' => 'inline', 'scope' => 'footer', 'weight' => 5));
 ?>
-
 
 
 
@@ -50,123 +47,6 @@ drupal_add_js("(function ($) { $('.datepicker').datepicker(); })(jQuery);", arra
     </div>
   </div>
 </div>
-
-
-
-<script type="text/javascript">
-(function ($) {
-$(document).ready(function(e){
-    $('.search-panel .dropdown-menu').find('a').click(function(e) {
-		e.preventDefault();
-		var param = $(this).attr("href").replace("#","");
-		var concept = $(this).text();
-		$('.search-panel span#search_concept').text(concept);
-		$('.input-group #search_param').val(param);
-	});
-});
-})(jQuery);
-
-(function ($) {
-$(document).ready(function(e){
-    $('.search-panel1 .dropdown-menu').find('a').click(function(e) {
-		e.preventDefault();
-		var param = $(this).attr("href").replace("#","");
-		var concept = $(this).text();
-		$('.search-panel1 span#search_concept1').text(concept);
-		$('.input-group #search_param1').val(param);
-	});
-});
-})(jQuery);
-</script>
-
-<style type="text/css">
-.page-header,
-.view-filters{
-display: none;
-}
-</style>
-						
-<div class="container searchbox_list">
-    <div class="row">
-    
-        <div class="col-xs-12">
-            <h1 class=" ">
-                Processos
-            </h1>
-			<form method="get" action="/processos" autocomplete="off">  
-
-		    <div class="input-group">
-                <div class="input-group-btn search-panel">
-                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                    	<span id="search_concept">Tipo de Processo</span> <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu" role="menu">
-                      <li><a href="#11">Contentor não recolhido</a></li>
-                      <li><a href="#10">Contentor a Arder</a></li>
-                      <li><a href="#12">Lixo fora do contentor</a></li>
-                      <li><a href="#13">Tchova não passou</a></li>
-                      <li><a href="#15">Lixeira informal</a></li>
-                      <li class="divider"></li>
-                      <li><a href="#All">Tudo</a></li>
-                    </ul>
-                </div>
-                <input type="hidden" name="field_category_tid" value="All" id="search_param">
-                <div class="input-group-btn search-panel1">
-                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                    	<span id="search_concept1">Estado do Processo</span> <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu" role="menu1">
-                      <li><a href="#5">Registados</a></li>
-                      <li><a href="#6">Em Processo</a></li>
-                      <li><a href="#7">Resolvidos</a></li>
-                      <li><a href="#8">Arquivados</a></li>
-                      <li><a href="#74">Invalidos</a></li>
-                      <li class="divider"></li>
-                      <li><a href="#All">Tudo</a></li>
-                    </ul>
-                </div>
-                <input type="hidden" name="field_status_tid" value="All" id="search_param1">   
-                <input type="text" class="form-control" name="field_address_value" placeholder="Pesquise por Local, código postal ou endereço">
-                <span class="input-group-btn">
-                    <button class="btn btn-primary submit"><span class="glyphicon glyphicon-search"></span></button>
-                </span>
-            </div> 
-
-<hr>
-<div class="container">
-<h3 id="linked-pickers">Datas</h3>
-    <div class="col-md-6">
-        <div class="form-group">
-            <div class="input-group date" id="datetimepicker6">
-                <input type="text" class="datepicker form-control" name="changed[min]" />
-                <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span>
-                </span>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="form-group">
-            <div class="input-group date" id="datetimepicker7">
-                <input type="text" class="datepicker form-control" name="changed[max]" />
-                <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span>
-                </span>
-            </div>
-        </div>
-    </div>
-</div>
-<hr>
-
-			</form>
-        </div>
-	</div>
-</div>
-
-
-
-
-
-
-
 
 
 
