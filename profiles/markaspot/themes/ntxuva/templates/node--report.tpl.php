@@ -32,11 +32,10 @@
 	    <?php if (isset($node->field_address_id[LANGUAGE_NONE][0]['value'])): ?>
                 <span class="label label-default marker-status">Ponto:
                 <?php
-                        $string = file_get_contents($GLOBALS['base_url'].'/georeport/v2/locations.json');
+                        $string = file_get_contents($GLOBALS['base_url'].'/georeport/v2/locations.json?id='.$node->field_address_id[LANGUAGE_NONE][0]['value']);
                         $json_a = json_decode($string, true);
-                        foreach ($json_a as $address) {
-                                if (intval($node->field_address_id[LANGUAGE_NONE][0]['value']) == intval($address['location_id']))
-                                        print $address['location_name'];
+                        if ($json_a) {
+                            print $json_a[0]['location_name'];
                         }
                 ?>
                 </span>
@@ -55,7 +54,6 @@
 	<span class="label label-default marker-status col-md-6">Morada:</span>
 	<?php print render($content['field_address']); ?>
       <?php endif; ?>
-      <?php print render($content['field_statement']); ?>
     </div>
     <div class="col-md-5 col-md-offset-1">
       <?php print render($content['field_geo']); ?>
@@ -72,6 +70,9 @@
   <div class="row">
     <div class="col-md-6">
       <?php print render($content['comments']); ?>
+      <?php if (isset($content['field_statement'])): ?> 
+        <?php print render($content['field_statement']); ?>
+      <?php endif; ?>
     </div>
     <div class="col-md-5 col-md-offset-1 ">
       <?php if (!empty($content['field_image'])): ?>

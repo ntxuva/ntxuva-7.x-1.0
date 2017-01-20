@@ -18,7 +18,7 @@ function markaspot_archive_cron() {
     ->propertyCondition('status', 1)
     ->propertyCondition('type', array('report'))
     ->propertyCondition('changed', time() - $period, '<=')
-    ->fieldCondition('field_status', 'tid', 5)
+    ->fieldCondition('field_status', 'tid', 6, '<=')
     ->propertyOrderBy('created', 'DESC');
   $result = $query->execute();
 

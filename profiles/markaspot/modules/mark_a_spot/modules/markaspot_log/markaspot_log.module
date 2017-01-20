@@ -119,7 +119,7 @@ function markaspot_log_node_insert($node) {
   if (!in_array('administrator', $user->roles) ||
     !in_array('Management', $user->roles) || !in_array('City Admin', $user->roles)) {
     $data = array(
-      'message' => t('The report has been created by Citizen'),
+      'message' => t('O problema foi criado pelo cidadão.'),
       'level'  => 'danger',
       'css_class'   => 'edit',
     );
@@ -138,14 +138,14 @@ function markaspot_log_node_insert($node) {
   if (in_array('Management', $user->roles) || in_array('City Admin', $user->roles)) {
     if (isset($node->nid)) {
       $data = array(
-        'message' => t('The report has been edited/created by the Municipality.'),
+        'message' => t('O problema foi editado pelo CMM.    Mensagem:    ' . $node->field_statement['und'][0]['value']),
         'level'  => 'warning',
         'css_class'   => 'edit',
       );
     }
     else {
       $data = array(
-        'message' => t('The report has been created.'),
+        'message' => t('O problema foi criado.'),
         'level'  => 'danger',
         'css_class'   => 'edit',
       );
@@ -196,7 +196,7 @@ function markaspot_log_node_update($node) {
 
     if ($node->nid) {
       $data = array(
-        'message' => t('The report has been updated by the Municipality.'),
+        'message' => t('O relatório foi actualizado pelo CMM.     Mensagem:     ' . $node->field_statement['und'][0]['value']),
         'level'  => 'success',
         'css_class'   => 'check',
       );
