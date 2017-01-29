@@ -196,7 +196,7 @@ function markaspot_log_node_update($node) {
 
     if ($node->nid) {
       $data = array(
-        'message' => t('O relatório foi actualizado pelo CMM.     Mensagem:     ' . $node->field_statement['und'][0]['value']),
+        'message' => t('O relatório foi actualizado pelo CMM.     Mensagem:     ' . $node->field_statement['und'][0]['value'] . 'Novo estado: ' .  taxonomy_term_load(($node->field_status[$node->language][0]["tid"]))->name),
         'level'  => 'success',
         'css_class'   => 'check',
       );
