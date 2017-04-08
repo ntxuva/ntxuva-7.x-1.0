@@ -834,6 +834,10 @@ var lang_pt = {
 
         $('.node-report-form #edit-submit').html(Drupal.t('Next'));
 
+        if (window.location.pathname.substr(window.location.pathname.length - 4) == 'edit')  {
+                $('.node-report-form #edit-submit').html(Drupal.t('Save'));
+        }
+
         var currentHash = document.location.hash.replace(/^#/, '');
         if (currentHash) {
             $('.nav-tabs a[href=#' + currentHash + ']').tab('show');
@@ -852,7 +856,7 @@ var lang_pt = {
                 }
             );
 
-            if (linkHash.indexOf('4--') > -1 || linkHash.indexOf('---foto') > -1)  {
+            if (linkHash.indexOf('4--') > -1 || linkHash.indexOf('---foto') > -1 ||  window.location.pathname.substr(window.location.pathname.length - 4) == 'edit')  {
                 $('.node-report-form #edit-submit').html(Drupal.t('Save'));
             }
             else {
@@ -865,8 +869,8 @@ var lang_pt = {
             currentHash = document.location.hash.replace(/^#/, '');
             e.preventDefault();
 
-            if (!currentHash || currentHash.indexOf('1--') > -1 || currentHash.indexOf('---local') > -1) {
-                $('a:contains(2.)').tab('show');
+            if ((!currentHash || currentHash.indexOf('1--') > -1 || currentHash.indexOf('---local') > -1) && !(window.location.pathname.substr(window.location.pathname.length - 4) == 'edit')) {
+		$('a:contains(2.)').tab('show');
                 var hash = $('a:contains(2.)').attr('href');
                 // animate
                 $('html, body').animate({
@@ -887,7 +891,7 @@ var lang_pt = {
                 });
                 document.getElementById("edit-field-geo-und-0-address-field").disabled = false;
             }
-         else if (currentHash.indexOf('3--') > -1 || currentHash.indexOf('---contacto') > -1) {
+            else if (currentHash.indexOf('3--') > -1 || currentHash.indexOf('---contacto') > -1) {
                 $('a:contains(4.)').tab('show');
 
                 var hash = $('a:contains(4.)').attr('href');
@@ -901,7 +905,7 @@ var lang_pt = {
                 $('#edit-submit').html(Drupal.t('Save'));
             }
 
-            else if (currentHash.indexOf('4--') > -1 || currentHash.indexOf('---foto') > -1) {
+            else if (currentHash.indexOf('4--') > -1 || currentHash.indexOf('---foto') > -1 || window.location.pathname.substr(window.location.pathname.length - 4) == 'edit' ) {
                 $('form').unbind('submit').submit();
             }
         });

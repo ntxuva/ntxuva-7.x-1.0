@@ -32,7 +32,6 @@ function ntxuva_preprocess_html(&$variables) {
   );
   drupal_add_html_head($ie_render_engine, 'meta_ie_render_engine');
 
-
 }
 
 
