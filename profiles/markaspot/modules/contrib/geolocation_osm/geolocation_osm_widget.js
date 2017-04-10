@@ -29,7 +29,7 @@
     $('#geolocation-lng-' + i + ' input').attr('value', latLng.lng);
     $('#geolocation-lng-item-' + i + ' .geolocation-lng-item-value').html(latLng.lng);
 
-    if (document.getElementById('edit-field-validatedcmm') !=null) { 
+    if (document.getElementById('edit-field-validatedcmm') !=null) {
       document.getElementById('edit-field-validatedcmm').style.visibility = "hidden";
     }
 
@@ -71,6 +71,8 @@
           // document.getElementById("edit-field-neighbourhood-und-0-value").disabled = false;
           $('#edit-field-neighbourhood-und-0-value').val(neighbourhood);
           document.getElementById("edit-field-neighbourhood").style.visibility = "hidden";
+
+          document.getElementById("edit-field-fonte-de-informa-o").style.visibility = "hidden";
 
           $('#edit-field-geo-und-0-address-field').val(address);
           document.getElementById("edit-field-geo-und-0-address-field").disabled = true;
