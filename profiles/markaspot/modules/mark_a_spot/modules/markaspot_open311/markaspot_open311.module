@@ -254,6 +254,31 @@ function markaspot_open311_services_resources() {
           ),
         ),
       ),
+      'update' => array(
+        'help' => 'Retrieves last request from phone number and reopens it',
+        'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
+        'callback' => 'markaspot_open311_reopen_request',
+        'access callback' => '_markaspot_open311_access',
+        'access arguments' => array('view'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'phone',
+            'type' => 'int',
+            'description' => 'The phone number of the requester',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
+          array(
+            'name' => 'parameters',
+            'type' => 'array',
+            'description' => '',
+            'source' => 'param',
+            'optional' => TRUE,
+            'default value' => array(),
+          ),
+        ),
+      ),
       'create' => array(
         'help' => 'Creates an Open311 request',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),

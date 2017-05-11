@@ -230,6 +230,54 @@ function markaspot_open311_requests_create($data) {
   return $service_request;
 }
 
+/**
+ * Callback for reopening a request
+ *
+ * @param int $id
+ *   The request id
+ *
+ * @param array $parameters
+ *   The parameters passed
+ *
+ * @return array
+ *   Service Request
+ */
+ function markaspot_open311_reopen_request($phone, $parameters) {
+   $parameters = ['phone' => $phone, 'status' => 'closed', 'type' => 'reopen'];
+   $requests = markaspot_open311_requests_index(0, $parameters);
+
+   if (isset($requests)) {
+     $request_id = $requests[0]['service_request_id'];
+     if (module_exists('markaspot_uuid')) {
+       // Get node->nid by uuid:
+       $service_request_id = entity_get_id_by_uuid('node', array($request_id));
+
+       if (!empty($service_request_id[$request_id])) {
+         // Load node with translated nid:
+         $node = node_load($service_request_id[$request_id]);
+       }
+       else {
+         markaspot_open311_process_services_error(t('Service request not found'), 404);
+       }
+     }
+     else {
+       $node = node_load($request_id);
+     }
+     // update category
+     $node->field_status[$node->language][0]['tid'] = 322;
+     // update number of reopening times
+     $node->field_reaberto[$node->language][0]['value']++;
+     // update revision
+     $node->revision = TRUE;
+     $node->is_current = TRUE;
+     $node->status = 1;
+     $node->revision_moderation = FALSE;
+     // save update
+     node_save($node);
+   }
+
+   return $requests[0];
+}
 
 /**
  * Callback for retrieving a request resource.
@@ -325,15 +373,8 @@ function markaspot_open311_requests_index($page, $parameters) {
 
   // Checking for status-parameter and map the code with taxonomy terms:
   if (isset($parameters['status'])) {
-
-    $status_array = taxonomy_get_term_by_name($parameters['status']);
-
-    if ($status_array) {
-      $status = reset($status_array);
-      $query->fieldCondition('field_status', 'tid', $status->tid);
-    }
-
-    else markaspot_open311_process_services_error(t('Status is not recognized, please check.'), 404);
+      $tids = markaspot_open311_status_map_tax($parameters['status']);
+      $query->fieldCondition('field_status', 'tid', $tids);
   }
 
   if (isset($parameters['phone'])) {
@@ -356,6 +397,11 @@ function markaspot_open311_requests_index($page, $parameters) {
   $end_timestamp = (isset($parameters['end_date']) && $parameters['end_date'] != '') ? strtotime($parameters['end_date']) : time();
   $query->propertyCondition('created', $end_timestamp, '<=');
   $query->propertyOrderBy('created', $direction = 'DESC');
+
+  // If we are reopening issues, we only admit issues from last 24h
+  if (isset($parameters['type'])) {
+    $query->propertyCondition('changed', time()-86400, '>=');
+  }
 
   if (isset($parameters['north'],$parameters['south'],$parameters['east'],$parameters['west'])) {
     $query->fieldCondition('field_geo', 'lat', $parameters['north'], '<=');
@@ -649,12 +695,12 @@ function markaspot_open311_tax_map_status($taxonomy_id) {
   $term['status'] = taxonomy_term_load($taxonomy_id);
 
   if (isset($term['status'])) {
-    $status_open = explode(',', variable_get('markaspot_open311_status_open', markaspot_logic_defaults('markaspot_logic_open311_status_open')));
+    $status_open = explode(',', variable_get('markaspot_open311_status_closed', markaspot_logic_defaults('markaspot_logic_open311_status_closed')));
     if (in_array($term['status']->tid, $status_open)) {
-      $status = 'open';
+      $status = 'closed';
     }
     else {
-      $status = 'closed';
+      $status = 'open';
     }
   }
   return $status;

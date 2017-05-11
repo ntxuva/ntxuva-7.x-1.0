@@ -173,11 +173,18 @@ function markaspot_log_node_update($node) {
   global $user;
 
   if (!in_array('Management', $user->roles) && !in_array('administrator', $user->roles)) {
-    if ($node->nid) {
+    if ($node->nid && ($node->field_reaberto[$node->language][0]['value'])) {
       $data = array(
-        'message' => t('The report has been edited by the Citizen'),
-        'level'  => 'warning',
+        'message' => t('O problema foi re-aberto pelo Munícipe.'),
+        'level'  => 'danger',
         'css_class'   => 'edit',
+      );
+    }
+    else if ($node->nid) {
+      $data = array(
+        'message' => t('O problema foi actualizado automaticamente pelo sistema. Mensagem:     ' . $node->field_statement['und'][0]['value'] ),
+        'level'  => 'success',
+        'css_class'   => 'check',
       );
     }
   }
@@ -185,7 +192,7 @@ function markaspot_log_node_update($node) {
 
     if ($node->nid) {
       $data = array(
-        'message' => t('The report has been updated by the Content Management Team.'),
+        'message' => t('Problema actualizado pela equipa de gestão de conteúdos.'),
         'level'  => 'success',
         'css_class'   => 'check',
       );

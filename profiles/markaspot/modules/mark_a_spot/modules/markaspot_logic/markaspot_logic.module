@@ -20,6 +20,7 @@ function markaspot_logic_form_report_node_form_alter(&$form, &$form_state, $form
   $form['#validate'][] = 'markaspot_logic_validate';
   $form['revision_information']['#access'] = FALSE;
 
+  $form['field_reaberto']['#access'] = FALSE;
 }
 
 /**
@@ -534,10 +535,10 @@ function markaspot_logic_defaults($id) {
       return '5';
 
     case 'markaspot_logic_open311_status_open':
-      return '5,6';
+      return '5,6,322';
 
     case 'markaspot_logic_open311_status_closed':
-      return '7,8';
+      return '7,8,74';
 
     case 'markaspot_logic_open311_changeset':
       return '2013-11-03 00:00';
