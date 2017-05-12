@@ -197,6 +197,33 @@ function markaspot_open311_delete_requests($id) {
  */
 function markaspot_open311_services_resources() {
   return array(
+    'people' => array(
+        'retrieve' => array(
+          'help' => 'List of people to be notified by neighbourhood',
+          'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
+          'callback' => 'markaspot_open311_people_retrieve',
+          'access callback' => '_markaspot_open311_access',
+          'access arguments' => array('view'),
+          'access arguments append' => TRUE,
+          'args' => array(
+            array(
+              'name' => 'id',
+              'type' => 'int',
+              'description' => 'The id of the request to get',
+              'source' => array('path' => '0'),
+              'optional' => FALSE,
+            ),
+            array(
+              'name' => 'parameters',
+              'type' => 'array',
+              'description' => '',
+              'source' => 'param',
+              'optional' => TRUE,
+              'default value' => array(),
+            ),
+          ),
+        ),
+    ),
     'locations' => array(
         'index' => array(
           'help' => 'Provides locations for integration with VoIP Drupal and USSD',
