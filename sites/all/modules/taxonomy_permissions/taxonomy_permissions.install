@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the taxonomy_permissions module.
+ *
+ */
+
+/*
+ * Implements hook_install().
+ *
+ * Give 'view terms' access to all vocabularies to all users to avoid surprises
+ * upon installation.
+ */
+function taxonomy_permissions_install() {
+  $perms = array();
+  foreach (taxonomy_get_vocabularies() as $vocabulary) {
+    $perms[] = 'view terms in ' . $vocabulary->vid;
+  }
+  user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, $perms);
+  user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, $perms);
+}
+
+/*
+ * Implements hook_disable().
+ */
+function taxonomy_permissions_disable() {
+  // Re-register taxonomy.module's permissions under its own name to keep them
+  // from being purged in case we're uninstalled.
+  taxonomy_permissions_disabling(TRUE);
+  module_implements('permission', FALSE, TRUE);
+  cache_clear_all('module_implements', 'cache_bootstrap');
+  $modules = user_permission_get_modules();
+  $perms = user_role_permissions(user_roles());
+  foreach ($perms as $rid => $perm) {
+    foreach (array_keys($perm) as $p) {
+      if (!isset($modules[$p]) || $modules[$p] != 'taxonomy') {
+        unset($perm[$p]);
+      }
+    }
+    user_role_change_permissions($rid, $perm);
+  }
+}
+
+/*
+ * Implements hook_uninstall().
+ */
+function taxonomy_permissions_uninstall() {
+}
+

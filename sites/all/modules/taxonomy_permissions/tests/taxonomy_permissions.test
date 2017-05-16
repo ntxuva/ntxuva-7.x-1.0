@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * @file
+ * Tests for the Taxonomy Permissions module.
+ */
+
+/**
+ * Test case for Taxonomy Permissions module.
+ */
+class TaxonomyPermissionsWebTestCase extends DrupalWebTestCase {
+
+  /**
+   * Implements getInfo().
+   *
+   * @return array
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Taxonomy Permissions Test',
+      'description' => "This is a dummy test to keep d.o's testbot happy; real tests are welcome!",
+      'group' => 'Taxonomy Permissions',
+    );
+  }
+
+  /**
+   * Dummy test that always succeeds.
+   */
+  function testTrue() {
+    $this->assertTrue(TRUE);
+  }
+
+
+}
+

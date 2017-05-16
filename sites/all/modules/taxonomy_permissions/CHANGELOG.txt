@@ -1,0 +1,22 @@
+
+CHANGELOG for Taxonomy Permissions for Drupal 7
+
+
+taxonomy_permissions 7.x-1.x-dev:
+
+
+taxonomy_permissions 7.x-1.2 (2016-08-10):
+  - #2779203 by salvis, sbaur: Fix possible SQL error from previous change.
+
+
+taxonomy_permissions 7.x-1.1 (2016-07-27):
+  - Make local cache of accessible vids by-user.
+  - #2712973 by Nixou: Entity reference and optional relationship.
+  - Add a dummy test that never fails, to keep d.o's testbot happy.
+
+taxonomy_permissions 7.x-1.0 (2015-06-11):
+  - #2022707: After two years and 513 known installations it's time to create a release (no functional change in this commit).
+
+taxonomy_permissions 7.x-1.0-rc1 (2013-06-18):
+  - Initial commit of Taxonomy Permissions, a module to add more permissions to the Taxonomy core module.
+

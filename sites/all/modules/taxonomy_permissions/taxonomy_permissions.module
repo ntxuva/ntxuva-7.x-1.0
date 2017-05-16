@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * @file
+ * taxonomy_permissions.module
+ *
+ * This module adds 'view' permissions to the Taxonomy core module.
+ *
+ */
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function taxonomy_permissions_module_implements_alter(&$implementations, $hook) {
+  // Remove taxonomy.module's permissions because we supply them.
+  if ($hook == 'permission') {
+    if (taxonomy_permissions_disabling()) {
+      unset($implementations['taxonomy_permissions']);
+    }
+    else {
+      unset($implementations['taxonomy']);
+    }
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function taxonomy_permissions_permission() {
+  // Insert a 'View terms in X' permission ahead of every 'Edit terms in X'
+  // permission from taxonomy.module.
+  $perms = taxonomy_permission();
+  $vocabularies = taxonomy_get_vocabularies();
+  $new_perms = array();
+  $matches = array();
+  foreach ($perms as $key => $perm) {
+    if (preg_match('#edit terms in ([0-9]*)#',$key, $matches)) {
+      $vid = $matches[1];
+      $new_perms['view terms in ' . $vid] = array(
+        'title' => t('View terms in %vocabulary', array('%vocabulary' => $vocabularies[$vid]->name)),
+      );
+    }
+    $new_perms[$key] = $perm;
+  }
+  return $new_perms;
+}
+
+/**
+ * Implements hook_query_term_access_alter().
+ */
+function taxonomy_permissions_query_term_access_alter(QueryAlterableInterface $query) {
+  global $user;
+  $uid = $user->uid;
+
+  $vids_by_user = &drupal_static(__FUNCTION__, array());
+  if (!isset($vids_by_user[$uid])) {
+    // Save the vids that $user is allowed to access.
+    $vids = array();
+    $vocabularies = taxonomy_get_vocabularies();
+    foreach ($vocabularies as $vid => $vocabulary) {
+      if (user_access('view terms in ' . $vocabulary->vid)) {
+        $vids[] = $vid;
+      }
+    }
+    $vids_by_user[$uid] = $vids;
+  }
+
+  // Restrict {taxonomy_term_data} to the allowed vocabularies only.
+  $tables = $query->getTables();
+  foreach ($tables as $table) {
+    if ($table['table'] == 'taxonomy_term_data') {
+      $or = db_or();
+      if (!empty($vids_by_user[$uid])) {
+        $or->condition($table['alias'] . '.vid', $vids_by_user[$uid], 'IN');
+      }
+      $or->isNull($table['alias'] . '.vid');
+      $query->condition($or);
+    }
+  }
+}
+
+/**
+ * Implements hook_field_access().
+ */
+function taxonomy_permissions_field_access($op, $field, $entity_type, $entity, $account) {
+  // Remove taxonomy_term_reference fields for disallowed vocabularies.
+  if ($field['type'] == 'taxonomy_term_reference') {
+    foreach ($field['settings']['allowed_values'] as $tree) {
+      if ($vocabulary = taxonomy_vocabulary_machine_name_load($tree['vocabulary'])) {
+        if (!user_access('view terms in ' . $vocabulary->vid, $account)) {
+          return FALSE;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_taxonomy_vocabulary_insert().
+ */
+function taxonomy_permissions_taxonomy_vocabulary_insert($vocabulary) {
+  $perms[] = 'view terms in ' . $vocabulary->vid;
+  user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, $perms);
+  user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, $perms);
+}
+
+/**
+ * Implements hook_taxonomy_vocabulary_delete().
+ */
+function taxonomy_permissions_taxonomy_vocabulary_delete($vocabulary) {
+  $perms[] = 'view terms in ' . $vocabulary->vid;
+  user_role_revoke_permissions(DRUPAL_ANONYMOUS_RID, $perms);
+  user_role_revoke_permissions(DRUPAL_AUTHENTICATED_RID, $perms);
+}
+
+/**
+ * Remembers if we have disabled access.
+ */
+function taxonomy_permissions_disabling($set = NULL) {
+  static $disabling = FALSE;
+
+  if (isset($set)) {
+    $disabling = $set;
+  }
+  return $disabling;
+}
+
