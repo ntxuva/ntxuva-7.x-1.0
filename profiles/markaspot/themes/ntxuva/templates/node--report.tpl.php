@@ -29,18 +29,6 @@
         <?php endif; ?>
         <div class="cat-stat-wrapper">
             <span class="label label-default marker-category col-<?php echo $category->field_category_hex[LANGUAGE_NONE][0]['value'] ?> col-md-6"><i class="icon-li icon-<?php echo $category->field_category_icon[LANGUAGE_NONE][0]['value'] ?> "></i> <?php echo $category->name?> </span> <span class="label label-default marker-status col-<?php echo $status->field_status_hex[LANGUAGE_NONE][0]['value'] ?> col-md-6"><i class="icon-li icon-<?php echo $status->field_status_icon[LANGUAGE_NONE][0]['value'] ?>"></i> <?php echo $status->name ?></span>
-	    <?php if (isset($node->field_address_id[LANGUAGE_NONE][0]['value'])): ?>
-                <span class="label label-default marker-status">Ponto:
-                <?php
-                        $string = file_get_contents($GLOBALS['base_url'].'/georeport/v2/locations.json?id='.$node->field_address_id[LANGUAGE_NONE][0]['value']);
-                        $json_a = json_decode($string, true);
-                        if ($json_a) {
-                            print $json_a[0]['location_name'];
-                        }
-                ?>
-                </span>
-            <?php endif; ?>
-
         </div>
       </header>
       <?php

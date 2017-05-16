@@ -173,8 +173,12 @@ function markaspot_open311_people_retrieve($request_id, $parameters) {
     }
   }
   else {
+    watchdog('People API', 'People not found. Request: ' . $request_id);
     markaspot_open311_process_services_error(t('No people found.'), 404);
   }
+
+  watchdog('People API', 'People found. Request: ' . $request_id , $people);
+
   return $people;
 }
 
@@ -247,6 +251,7 @@ function markaspot_open311_requests_create($data) {
 
     if ($se == FALSE || $nw == FALSE) {
       markaspot_open311_process_services_error(t('Your position is not located in our range of activity'), 400);
+      watchdog('Open311 API', $bbox);
     }
 
     if (!isset($data->service_code)) {

@@ -502,19 +502,19 @@ function markaspot_logic_defaults($id) {
       return '1';
 
     case 'markaspot_logic_bbox_nw_lat':
-      return '50.8463';
+      return '-25.84540259253364';
 
     case 'markaspot_logic_bbox_nw_lng':
-      return '6.832';
+      return '32.53601074218749';
 
     case 'markaspot_logic_bbox_se_lat':
-      return '50.8042';
+      return '-25.98436240317155';
 
     case 'markaspot_logic_bbox_se_lng':
-      return '6.937';
+      return '32.68707275390625';
 
     case 'markaspot_logic_archive_days':
-      return '30';
+      return '7';
 
     case 'markaspot_logic_uuid_title':
       return 1;
