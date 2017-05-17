@@ -20,6 +20,8 @@ function markaspot_logic_form_report_node_form_alter(&$form, &$form_state, $form
   $form['#validate'][] = 'markaspot_logic_validate';
   $form['revision_information']['#access'] = FALSE;
 
+
+  $form['body']['#access'] = FALSE;
   $form['field_reaberto']['#access'] = FALSE;
 }
 

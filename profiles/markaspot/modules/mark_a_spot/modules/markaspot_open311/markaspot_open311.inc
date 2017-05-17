@@ -157,6 +157,7 @@ function markaspot_open311_people_retrieve($request_id, $parameters) {
     ->entityCondition('bundle', 'people')
     ->propertyCondition('status', 1)
     ->fieldCondition('field_bairro', 'tid', $bairro_tid, '=')
+    ->fieldCondition('field_problemas','tid', $node->field_category[$node->language][0]["tid"], '=')
     ->addMetaData('account', user_load(1));
   $result = $query->execute();
 
@@ -173,12 +174,10 @@ function markaspot_open311_people_retrieve($request_id, $parameters) {
     }
   }
   else {
-    watchdog('People API', 'People not found. Request: ' . $request_id);
+    watchdog('People API', 'People not found.' . $request_id);
     markaspot_open311_process_services_error(t('No people found.'), 404);
   }
-
-  watchdog('People API', 'People found. Request: ' . $request_id , $people);
-
+  watchdog('People API', 'Ok.', $people);
   return $people;
 }
 
@@ -777,6 +776,16 @@ function markaspot_open311_service_map_tax($service_code) {
   }
   return $tid;
 }
+
+/**
+ * Mapping requested neighbourhood to drupal taxonomy.
+ *
+ * @param string $name
+ *   Neighbourhood name
+ *
+ * @return int
+ *   The TaxonomyId
+ */
 
 function markaspot_open311_neighbourhood_map_tax($name) {
   $result = taxonomy_get_term_by_name($name);
