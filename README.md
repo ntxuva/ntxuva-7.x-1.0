@@ -67,7 +67,7 @@ LAMP (Linux, Apache, MySQL, PHP)
 
 **Developed by**
 
-Fork from open source project (http://www.mark-a-spot.de/en )
+Fork from [Mark-a-Spot](http://www.mark-a-spot.de/en )
 Improvements by WB team 
 
 **Source code**
@@ -76,12 +76,11 @@ http://github.com/ntxuva/ntxuva-7.x-1.0
 
 The Open311 API is implemented by the Open311 module, that you can find in the following directory: **profiles/markaspot/modules/mark_a_spot/modules/markaspot_open311**
 
-The source code Open311 API Module is available here: https://github.com/ntxuva/ntxuva-7.x-1.0/tree/master/profiles/markaspot/modules/mark_a_spot/modules/markaspot_open311
+[Source code of Open311 API Module](https://github.com/ntxuva/ntxuva-7.x-1.0/tree/master/profiles/markaspot/modules/mark_a_spot/modules/markaspot_open311)
 
 **API Specifications**
 
-The API follows the Open311 GeoReport v2 standard, as specified here: 
-http://wiki.open311.org/GeoReport_v2/
+The API follows the [Open311 GeoReport v2 standard](http://wiki.open311.org/GeoReport_v2/)
 
 Apart from Open311 GeoReport v2 specifications, we have developed some specific features to support the implementation in Maputo:
 
@@ -111,7 +110,7 @@ LAMP (Linux, Apache, MySQL, PHP)
 
 **Developed by**
 
-Fork from open source project (http://www.mark-a-spot.de/en )
+Fork from [Mark-a-Spot](http://www.mark-a-spot.de/en )
 Improvements by WB team 
 
 **Source code**
@@ -129,14 +128,14 @@ Drupal Mark-a-spot
 
 **Developed by**
 
-Fork from open source project (http://www.mark-a-spot.de/en )
+Fork from [Mark-a-Spot](http://www.mark-a-spot.de/en )
 Template by UX
 
 **Source code**
 
 http://github.com/ntxuva/ntxuva-7.x-1.0
 
-The source code of the template is available here: https://github.com/ntxuva/ntxuva-7.x-1.0/tree/master/profiles/markaspot/themes/ntxuva
+[Source code of the template](https://github.com/ntxuva/ntxuva-7.x-1.0/tree/master/profiles/markaspot/themes/ntxuva)
 
 ----------
 
@@ -147,7 +146,7 @@ The USSD interface allows users in the peri-urban area of Maputo to report probl
 
 The locations where problems can exist were previously mapped by the MOPA team. You can submit problems related to waste containers or to a neighbourhood quarter. 
 
-A service on the MOPA API provides the USSD interface with all available locations (http://www.mopa.co.mz/georeport/v2/locations.json). The USSD menu dynamically adapts to the locations provided by the API.
+A service on the MOPA API provides the USSD interface with [all available locations](http://www.mopa.co.mz/georeport/v2/locations.json). The USSD menu dynamically adapts to the locations provided by the API.
 
 **Technology stack**
 
@@ -216,11 +215,11 @@ World Bank
 
 **Source code**
 
-- Catch all trigger - https://flowxo.com/share/v9q2j37z
-- Request problem category & location - https://flowxo.com/share/pdkxj9br
-- Receive location - https://flowxo.com/share/m6xgpxke
-- Receive picture - https://flowxo.com/share/gpp3qj7n
-- Finalize submission - https://flowxo.com/share/j2ka2e9d
+- [Catch all trigger](https://flowxo.com/share/v9q2j37z)
+- [Request problem category & location](https://flowxo.com/share/pdkxj9br)
+- [Receive location](https://flowxo.com/share/m6xgpxke)
+- [Receive picture](https://flowxo.com/share/gpp3qj7n)
+- [Finalize submission](https://flowxo.com/share/j2ka2e9d)
 ----------
 ## Auxiliary modules
 
@@ -290,7 +289,7 @@ Monthly reports are created  by using [Pandas](http://pandas.pydata.org/), [Seab
 UX
 
 **Source code**
-
 https://github.com/ntxuva/mopa-utils/
+
 ----------
 
