@@ -8,9 +8,9 @@ The full history of commits was lost, due to a wrong initial commit. But attribu
 
 Ntxuva is the core system that supports [MOPA](http://www.mopa.co.mz/), a participatory monitoring system for waste management currently implemented in Maputo, Mozambique. 
 
-# Current architecture of MOPA
+## Current architecture of MOPA
 
-# Justification
+### Justification
 
 MOPA is a bootstrap project. It has been developed with the intention of delivering quick, yet customized, solutions in a project with low resources.
 
@@ -21,7 +21,6 @@ Also, requirements have changed over time, and different developers have worked 
 This document shares the current architecture of MOPA. Its purpose is to share the knowledge about what has been developed and how everything currently works. Finally, some thoughts are shared on how a future architecture could be deployed with a more homogeneous code base and technology stack.
 
 ----------
-# High-level components
 ![Architecture](https://d2mxuefqeaa7sj.cloudfront.net/s_F0B74237D50C0EF50831F98E33FE11E8EA180F53070F9F7B8D0EFF63DFE6A789_1497725185882_MOPA+Architecture+-+Page+111.svg)
 
 As depicted above, MOPA currently has the following high-level components:
@@ -61,14 +60,14 @@ Saves all 311 requests and implements the Open311 GeoReport v2 API.
 
 **Technology stack**
 
-Drupal 7
-Distribution: Mark-a-spot
-LAMP (Linux, Apache, MySQL, PHP)
+- Drupal 7
+- Distribution: Mark-a-spot
+- LAMP (Linux, Apache, MySQL, PHP)
 
 **Developed by**
 
-Fork from [Mark-a-Spot](http://www.mark-a-spot.de/en )
-Improvements by WB team 
+- Fork from [Mark-a-Spot](http://www.mark-a-spot.de/en )
+- Improvements by WB team 
 
 **Source code**
 
@@ -104,14 +103,14 @@ This component uses the same Drupal instance as Back-end & Public website.
 
 **Technology stack**
 
-Drupal 7
-Distribution: Mark-a-spot
-LAMP (Linux, Apache, MySQL, PHP)
+- Drupal 7
+- Distribution: Mark-a-spot
+- LAMP (Linux, Apache, MySQL, PHP)
 
 **Developed by**
 
-Fork from [Mark-a-Spot](http://www.mark-a-spot.de/en )
-Improvements by WB team 
+- Fork from [Mark-a-Spot](http://www.mark-a-spot.de/en )
+- Improvements by WB team 
 
 **Source code**
 http://github.com/ntxuva/ntxuva-7.x-1.0
@@ -124,12 +123,14 @@ http://github.com/ntxuva/ntxuva-7.x-1.0
 
 **Technology stack**
 
-Drupal Mark-a-spot
+- Drupal 7
+- Distribution: Mark-a-spot
+- LAMP (Linux, Apache, MySQL, PHP)
 
 **Developed by**
 
-Fork from [Mark-a-Spot](http://www.mark-a-spot.de/en )
-Template by UX
+- Fork from [Mark-a-Spot](http://www.mark-a-spot.de/en )
+- Template by UX
 
 **Source code**
 
