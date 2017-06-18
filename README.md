@@ -22,8 +22,7 @@ This document shares the current architecture of MOPA. Its purpose is to share t
 
 ----------
 # High-level components
-https://d2mxuefqeaa7sj.cloudfront.net/s_F0B74237D50C0EF50831F98E33FE11E8EA180F53070F9F7B8D0EFF63DFE6A789_1497725185882_MOPA+Architecture+-+Page+111.svg
-
+![Architecture](https://d2mxuefqeaa7sj.cloudfront.net/s_F0B74237D50C0EF50831F98E33FE11E8EA180F53070F9F7B8D0EFF63DFE6A789_1497725185882_MOPA+Architecture+-+Page+111.svg)
 
 As depicted above, MOPA currently has the following high-level components:
 **Administration systems**
@@ -48,7 +47,7 @@ As depicted above, MOPA currently has the following high-level components:
 ## Administration systems 
 
 **Back-end system (Database & Open311 API)**
-Description
+**Description**
 Includes admin interface for:
 
 - service categories
@@ -58,26 +57,23 @@ Includes admin interface for:
 
 Saves all 311 requests and implements the Open311 GeoReport v2 API.
 
-Technology stack
+**Technology stack**
 Drupal 7
 Distribution: Mark-a-spot
 LAMP (Linux, Apache, MySQL, PHP)
 
-Server
-Hosted in Linode (http://www.mopa.co.mz/)
-
-Developed by
+**Developed by**
 Fork from open source project (http://www.mark-a-spot.de/en )
 Improvements by WB team 
 
-Source code
+**Source code**
 http://github.com/ntxuva/ntxuva-7.x-1.0
 
 The Open311 API is implemented by the Open311 module, that you can find in the following directory: **profiles/markaspot/modules/mark_a_spot/modules/markaspot_open311**
 
 The source code Open311 API Module is available here: https://github.com/ntxuva/ntxuva-7.x-1.0/tree/master/profiles/markaspot/modules/mark_a_spot/modules/markaspot_open311
 
-API Specifications
+**API Specifications**
 The API follows the Open311 GeoReport v2 standard, as specified here: 
 http://wiki.open311.org/GeoReport_v2/
 
@@ -86,16 +82,11 @@ Apart from Open311 GeoReport v2 specifications, we have developed some specific 
 - Locations, which allows easy access to the locations were problems can occur (neighbourhood quarters, waste containers, etc.)
 - People, which provides the list of people that need to be notified related to each service request
 - Re-open issues, that allows users to re-open an issue when they do not agree that it was solved.
-
-You can find detailed documentation of these services here: [link_to_api_specifications](http://#)
-
-
-[ ] @Jean B Write description of MOPA API 
 ----------
 ## User interfaces
 
-**Ticket management system**
-Description
+### Ticket management system
+**Description**
 Ticket management interface used by MOPA team @ CMM.
 
 It allows registered users to:
@@ -105,91 +96,80 @@ It allows registered users to:
 
 This component uses the same Drupal instance as Back-end & Public website.
 
-Technology stack
+**Technology stack**
 Drupal 7
 Distribution: Mark-a-spot
 LAMP (Linux, Apache, MySQL, PHP)
 
-Server
-Hosted in Linode (http://www.mopa.co.mz/)
-
-Developed by
+**Developed by**
 Fork from open source project (http://www.mark-a-spot.de/en )
 Improvements by WB team 
 
-Source code
+**Source code**
 http://github.com/ntxuva/ntxuva-7.x-1.0
 
 ----------
 
-**Public Website**
-Description
+### Public Website
+**Description**
 
 
-Technology stack
+**Technology stack**
 Drupal Mark-a-spot
 
-Server
-Hosted in Linode (http://www.mopa.co.mz/)
-
-Developed by
+**Developed by**
 Fork from open source project (http://www.mark-a-spot.de/en )
 Template by UX
 
-Source code
+**Source code**
 http://github.com/ntxuva/ntxuva-7.x-1.0
 
 The source code of the template is available here: https://github.com/ntxuva/ntxuva-7.x-1.0/tree/master/profiles/markaspot/themes/ntxuva
 
 ----------
 
-**USSD interface**
-Description
+### USSD interface
+**Description**
 The USSD interface allows users in the peri-urban area of Maputo to report problems to MOPA. It was designed to overcome the barrier of access to people that do not own smart phones. With four simple steps, users can submit their service request.
 
 The locations where problems can exist were previously mapped by the MOPA team. You can submit problems related to waste containers or to a neighbourhood quarter. 
 
 A service on the MOPA API provides the USSD interface with all available locations (http://www.mopa.co.mz/georeport/v2/locations.json). The USSD menu dynamically adapts to the locations provided by the API.
 
-Technology stack
+**Technology stack**
 PHP
 
-Server
-Hosted in Linode (http://karma.mopa.co.mz/)
-
-Developed by
+**Developed by**
 UX
 
-Source code
+**Source code**
 Not yet released.
 
-
-[ ] @Jean B request UX to publish USSD code on Github
 ----------
 
-**Mobile Application**
-Description
+### Mobile Application
+**Description**
 Mobile application that allows people to submit reports and see reports already existing in the system. 
 
-Technology stack
+**Technology stack**
 
 - Hybrid application
 - Apache Cordova
 - HTML5 + JavaScript
 
-Hosting
+**Hosting**
 Available @ [Google Play](https://play.google.com/store/apps/details?id=mz.co.mopa&utm_source=global_co&utm_medium=prtnr&utm_content=Mar2515&utm_campaign=PartBadge&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1)
 
-Developed by
+**Developed by**
 UX
 
-Source code
+**Source code**
 Not released.
 
 ----------
 
-**Messenger Bot**
-Description
+### Messenger Bot
+**Description**
 The Messenger Bot allows people to use Facebook and Telegram interfaces to report problems to MOPA. 
 
 It was created in June 2017 in a prototype form and it replicates the USSD work flow, leveraging on the advantages enabled by these new services. The main advantages are:
@@ -199,19 +179,18 @@ It was created in June 2017 in a prototype form and it replicates the USSD work 
 
 In the specific case of Facebook Messenger, and in the case of Mozambique, there is the additional advantage of it being free. Users pay no traffic when using Facebook.
 
-Technology stack
+**Technology stack**
 On its initial version, the Bots were developed on [Flowxo](https://flowxo.com/). 
 
 In the future, if proven successful, an open source development can be easily deployed.
 
-Hosting
+**Hosting**
 [Flowxo](https://flowxo.com/)
 
-Developed by
+**Developed by**
 World Bank
 
-Source code
-
+**Source code**
 - Catch all trigger - https://flowxo.com/share/v9q2j37z
 - Request problem category & location - https://flowxo.com/share/pdkxj9br
 - Receive location - https://flowxo.com/share/m6xgpxke
@@ -220,8 +199,8 @@ Source code
 ----------
 ## Auxiliary modules
 
-**SMS notification system** 
-Description
+### SMS notification system
+**Description**
 This module uses the issue list from the Open311 GeoReport v2 API to track changes in requests and notify users when there’s something new. 
 
 Use cases for notifications:
@@ -239,24 +218,20 @@ To minimize changes at the API level, the flow works as follows:
     - If not, according to status, send message to Solvers only (if problem status is New) or Solvers + Citizen (for all other problem statuses).
   - If same, ignore. 
 
-Technology stack
+**Technology stack**
 Python + Apache + MySQL
 Flask
 
-Server
-Hosted in Linode (http://www.mopa.co.mz/)
-
-Developed by
+**Developed by**
 UX
 
-Source code
+**Source code**
 https://github.com/ntxuva/mopa-utils/
-
 
 ----------
 
-**PDF Report System**
-Description
+### PDF Report System
+**Description**
 This module automatically analyses data from Open311 API and generates PDF reports send to the municipality. 
 
 This allows automatic distribution of PDF files by email. It provides relevant information to specific user groups. 
@@ -271,17 +246,14 @@ All reports are created in HTML, and then exported to PDF by using [xhtml2pdf](h
 
 Monthly reports are created  by using [Pandas](http://pandas.pydata.org/), [Seaborn](https://seaborn.pydata.org/), and [Matplotlib](https://matplotlib.org/) libraries.
 
-Technology stack
+**Technology stack**
 Python + Apache + MySQL
 Flask
 
-Server
-Hosted in Linode (http://www.mopa.co.mz/)
-
-Developed by
+**Developed by**
 UX
 
-Source code
+**Source code**
 https://github.com/ntxuva/mopa-utils/
 
 ----------
