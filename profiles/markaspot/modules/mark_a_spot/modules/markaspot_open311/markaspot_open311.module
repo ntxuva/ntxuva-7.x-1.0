@@ -255,6 +255,33 @@ function markaspot_open311_services_resources() {
         'args' => array(),
       ),
     ),
+    'reopen' => array(
+      'update' => array(
+        'help' => 'Retrieves last request from phone number and reopens it',
+        'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
+        'callback' => 'markaspot_open311_reopen_request',
+        'access callback' => '_markaspot_open311_access',
+        'access arguments' => array('view'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'phone',
+            'type' => 'int',
+            'description' => 'The phone number of the requester',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
+          array(
+            'name' => 'parameters',
+            'type' => 'array',
+            'description' => '',
+            'source' => 'param',
+            'optional' => TRUE,
+            'default value' => array(),
+          ),
+        ),
+      ),
+    ),
     'requests' => array(
       'retrieve' => array(
         'help' => 'Retrieves a request',
@@ -281,31 +308,6 @@ function markaspot_open311_services_resources() {
           ),
         ),
       ),
-      'update' => array(
-        'help' => 'Retrieves last request from phone number and reopens it',
-        'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
-        'callback' => 'markaspot_open311_reopen_request',
-        'access callback' => '_markaspot_open311_access',
-        'access arguments' => array('view'),
-        'access arguments append' => TRUE,
-        'args' => array(
-          array(
-            'name' => 'phone',
-            'type' => 'int',
-            'description' => 'The phone number of the requester',
-            'source' => array('path' => '0'),
-            'optional' => FALSE,
-          ),
-          array(
-            'name' => 'parameters',
-            'type' => 'array',
-            'description' => '',
-            'source' => 'param',
-            'optional' => TRUE,
-            'default value' => array(),
-          ),
-        ),
-      ),
       'create' => array(
         'help' => 'Creates an Open311 request',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
@@ -314,6 +316,29 @@ function markaspot_open311_services_resources() {
         'access arguments' => array('create'),
         'access arguments append' => TRUE,
         'args' => array(
+          array(
+            'source' => 'data',
+            'type' => 'array',
+            'description' => 'The request object',
+            'optional' => TRUE,
+          ),
+        ),
+      ),
+      'update' => array(
+        'help' => 'Updates a request status and validation',
+        'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
+        'callback' => 'markaspot_open311_update_request',
+        'access callback' => '_markaspot_open311_access',
+        'access arguments' => array('view'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'id',
+            'type' => 'int',
+            'description' => 'The id of the request to get',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
           array(
             'source' => 'data',
             'type' => 'array',

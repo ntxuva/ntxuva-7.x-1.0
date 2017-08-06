@@ -287,16 +287,67 @@ function markaspot_open311_requests_create($data) {
 }
 
 /**
+ * Callback for updating a request status and validation
+ *
+ * @param int $request_id
+ *   The request id
+ *
+ * @param array $data
+ *   Data posted via request
+ *
+ * @return array
+ *   Service Request
+ */
+
+function markaspot_open311_update_request($request_id, $data) {
+  if (module_exists('markaspot_uuid')) {
+    // Get node->nid by uuid:
+    $service_request_id = entity_get_id_by_uuid('node', array($request_id));
+
+    if (!empty($service_request_id[$request_id])) {
+      // Load node with translated nid:
+      $node = node_load($service_request_id[$request_id]);
+    }
+    else {
+      markaspot_open311_process_services_error(t('Service request not found'), 404);
+    }
+  }
+  else {
+    $node = node_load($request_id);
+    $node->language = LANGUAGE_NONE;
+  }
+
+  $data = (object) $data;
+
+  if ($data->validated == 'True') $node->field_validatedcmm[0]['value'] = 1;
+  if (isset($data->status)) {
+    $node->field_status[$node->language][0]['tid']  = markaspot_open311_status_map_tax($status);
+  }
+
+  // update revision
+  $node->revision = TRUE;
+  $node->is_current = TRUE;
+  $node->status = 1;
+  $node->revision_moderation = FALSE;
+  // save update
+  node_save($node);
+
+  return markaspot_open311_requests_retrieve($request_id);
+}
+
+
+
+/**
  * Callback for reopening a request
  *
- * @param int $id
- *   The request id
+ * @param int $phone
+ *   The requester phone
  *
  * @param array $parameters
  *   The parameters passed
  *
  * @return array
- *   Service Request
+ *   Service Request with updated status
  */
  function markaspot_open311_reopen_request($phone, $parameters) {
    $parameters = ['phone' => $phone, 'status' => 'closed', 'type' => 'reopen', 'limit' => 1];
@@ -589,7 +640,6 @@ function markaspot_open311_node_map_request($node, $status, $parameters) {
   // Non Open311 compliant fields can be added here:
   if (isset($node->field_neighbourhood[$node->language][0]['value'])) $request['neighbourhood'] = $node->field_neighbourhood[$node->language][0]['value'];
   if (isset($parameters['phone_key'])) if ($parameters['phone_key']==666554 && isset($node->field_phone[$node->language][0]['value'])) $request['phone'] = $node->field_phone[$node->language][0]['value'];
-  if (isset($parameters['upd_key'])) if ($parameters['upd_key']==836845231987642137864928) $request['validated_cmm'] = $node->field_validatedcmm[0]['value'];
 
   return $request;
 }
@@ -708,6 +758,29 @@ function markaspot_open311_tax_map_service($taxonomy_term) {
   return $service;
 }
 
+/**
+ * Mapping requested status to drupal taxonomy.
+ *
+ * @param string $status
+ *   Status
+ *
+ * @return int
+ *   The TaxonomyId
+ */
+
+function markaspot_open311_status_map_tax($status) {
+  $result = taxonomy_get_term_by_name($status);
+
+  if ($result) {
+    $first_term = array_shift($result);
+    return $first_term->tid;
+  }
+  else {
+    markaspot_open311_process_services_error(t('Status not found'), 404);
+  }
+}
+
+
 
 /**
  * Mapping taxonomy to status.
@@ -792,7 +865,7 @@ function markaspot_open311_neighbourhood_map_tax($name) {
 
   if ($result) {
     $first_term = array_shift($result);
-    return $first_term->tid;  
+    return $first_term->tid;
   }
   else {
     markaspot_open311_process_services_error(t('Neighbourhood not found'), 404);
