@@ -321,7 +321,7 @@ function markaspot_open311_update_request($request_id, $data) {
 
   if ($data->validated == 'True') $node->field_validatedcmm[0]['value'] = 1;
   if (isset($data->status)) {
-    $node->field_status[$node->language][0]['tid']  = markaspot_open311_status_map_tax($status);
+    $node->field_status[$node->language][0]['tid']  = markaspot_open311_status_map_taxonomy($status);
   }
 
   // update revision
@@ -768,7 +768,7 @@ function markaspot_open311_tax_map_service($taxonomy_term) {
  *   The TaxonomyId
  */
 
-function markaspot_open311_status_map_tax($status) {
+function markaspot_open311_status_map_taxonomy($status) {
   $result = taxonomy_get_term_by_name($status);
 
   if ($result) {
