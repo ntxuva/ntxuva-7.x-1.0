@@ -300,6 +300,7 @@ function markaspot_open311_requests_create($data) {
  */
 
 function markaspot_open311_update_request($request_id, $data) {
+  $parameters = [];
   if (module_exists('markaspot_uuid')) {
     // Get node->nid by uuid:
     $service_request_id = entity_get_id_by_uuid('node', array($request_id));
@@ -332,7 +333,7 @@ function markaspot_open311_update_request($request_id, $data) {
   // save update
   node_save($node);
 
-  return markaspot_open311_requests_retrieve($request_id);
+  return markaspot_open311_requests_retrieve($request_id, $parameters);
 }
 
 
