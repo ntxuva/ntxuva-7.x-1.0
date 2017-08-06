@@ -63,6 +63,10 @@ function markaspot_open311_find_locations($parameters) {
     $query->fieldCondition('field_area', 'value', $parameters['area'], '=');
   }
 
+  if (isset($parameters['quarter'])) {
+    $query->fieldCondition('field_quarter', 'value', $parameters['quarter'], '=');
+  }
+
 
   $result = $query->execute();
 
@@ -793,7 +797,7 @@ function markaspot_open311_neighbourhood_map_tax($name) {
 
   if ($result) {
     $first_term = array_shift($result);
-    return $first_term->tid;  
+    return $first_term->tid;
   }
   else {
     markaspot_open311_process_services_error(t('Neighbourhood not found'), 404);
