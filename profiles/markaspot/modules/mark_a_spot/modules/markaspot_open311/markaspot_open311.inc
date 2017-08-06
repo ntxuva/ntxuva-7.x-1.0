@@ -321,6 +321,7 @@ function markaspot_open311_update_request($request_id, $data) {
   $data = (object) $data;
 
   if ($data->validated == 'True') $node->field_validatedcmm[0]['value'] = 1;
+  if ($data->validated == 'False') $node->field_validatedcmm[0]['value'] = 0;
   if (isset($data->status)) {
     $node->field_status[$node->language][0]['tid']  = markaspot_open311_status_map_taxonomy($data->status);
   }
