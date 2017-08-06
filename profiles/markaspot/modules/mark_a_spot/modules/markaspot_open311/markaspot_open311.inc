@@ -590,6 +590,7 @@ function markaspot_open311_node_map_request($node, $status, $parameters) {
   if (isset($node->field_neighbourhood[$node->language][0]['value'])) $request['neighbourhood'] = $node->field_neighbourhood[$node->language][0]['value'];
   if (isset($parameters['phone_key'])) if ($parameters['phone_key']==666554 && isset($node->field_phone[$node->language][0]['value'])) $request['phone'] = $node->field_phone[$node->language][0]['value'];
   if (isset($parameters['upd_key'])) if ($parameters['upd_key']==836845231987642137864928) $request['validated_cmm'] = $node->field_validatedcmm[0]['value'];
+  $request['reopens'] = $node->field_reaberto[$node->language][0]['value'];
 
   return $request;
 }
