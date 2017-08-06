@@ -198,6 +198,11 @@ function markaspot_open311_delete_requests($id) {
 function markaspot_open311_services_resources() {
   return array(
     'people' => array(
+         /**
+         * @api {get} /people/:service_request_id List people that need to be notified when a request is updated
+         * @apiName Open311
+         * @apiGroup People
+         */
         'retrieve' => array(
           'help' => 'List of people to be notified by neighbourhood',
           'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
@@ -225,6 +230,51 @@ function markaspot_open311_services_resources() {
         ),
     ),
     'locations' => array(
+        /**
+         * @api {get} /locations List locations
+         * @apiName Open311
+         * @apiParam {String} [district] District
+         * @apiParam {String} [neighbourhood] Neighbourhood
+         * @apiParam {String} [type] Type of Location (container, district, quarter)
+
+         * @apiSuccess {Number} location_id  Id of Location
+         * @apiSuccess {String} location_name  Location Name
+         * @apiSuccess {String} location_type  Location Type (container, district, quarter)
+         * @apiSuccess {String} lat  Latitude
+         * @apiSuccess {String} long  Longitude
+         * @apiSuccess {String} district  District
+         * @apiSuccess {Array} neighbourhood  Array of Neighbourhoods
+
+         * @apiSuccessExample {json} Success-Response:
+           [
+            {
+            "location_id": "1",
+            "location_name": "KaMubukwana",
+            "location_type": "district",
+            "lat": "-25.87634",
+            "long": "32.57911",
+            "district": "KaMubukwana",
+            "neighbourhood": [
+            "Zimpeto",
+            "Bagamoyo",
+            "Inhagoia A",
+            "Inhagoia B",
+            "Jardim",
+            "George Dimitrov (Benfica)",
+            "Luis Cabral",
+            "Magoanine A",
+            "Magoanine B",
+            "Magoanine C",
+            "Malhazine",
+            "Nsalane",
+            "25 de Junho A",
+            "25 de Junho B"
+            ]
+            }
+          ]
+
+         * @apiGroup Locations
+         */
         'index' => array(
           'help' => 'Provides locations for integration with VoIP Drupal and USSD',
           'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
@@ -245,6 +295,11 @@ function markaspot_open311_services_resources() {
         ),
     ),
     'discovery' => array(
+         /**
+         * @api {get} /discovery Service discovery mechanism
+         * @apiName Open311
+         * @apiGroup Discovery
+         */
       'index' => array(
         'help' => 'Provides specification for the service discovery mechanism',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
@@ -256,6 +311,11 @@ function markaspot_open311_services_resources() {
       ),
     ),
     'reopen' => array(
+         /**
+         * @api {put} /reopen/:phone_number Retrieves last request from phone number and reopens it
+         * @apiName Open311
+         * @apiGroup Requests
+         */
       'update' => array(
         'help' => 'Retrieves last request from phone number and reopens it',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
@@ -283,7 +343,21 @@ function markaspot_open311_services_resources() {
       ),
     ),
     'requests' => array(
+         /**
+         * @apiDefine Requests  Requests
+         *
+         * An entity (e.g minicipal) responsible for addressing
+         * service request(issue).
+         *
+         * It may be a self managed entity or division within another
+         * entity(jurisdiction) in case there is hierarchy.
+         */
       'retrieve' => array(
+         /**
+         * @api {get} /requests/:service_request_id Retrieves a request
+         * @apiName Retrieve
+         * @apiGroup Requests
+         */
         'help' => 'Retrieves a request',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
         'callback' => 'markaspot_open311_requests_retrieve',
@@ -309,6 +383,11 @@ function markaspot_open311_services_resources() {
         ),
       ),
       'create' => array(
+        /**
+         * @api {post} /requests Creates a new request
+         * @apiName Create
+         * @apiGroup Requests
+         */
         'help' => 'Creates an Open311 request',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
         'callback' => 'markaspot_open311_requests_create',
@@ -325,6 +404,13 @@ function markaspot_open311_services_resources() {
         ),
       ),
       'update' => array(
+        /**
+         * @api {put} /requests/:service_request_id Updates a request status and validation
+         * @apiName Update
+         * @apiGroup Requests
+         * @apiParam {String} [status] One the available statuses (Em processo, Inválido, Resolvido)
+         * @apiParam {String} [validated] Validated by CMM >> True or False
+         */
         'help' => 'Updates a request status and validation',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
         'callback' => 'markaspot_open311_update_request',
@@ -348,6 +434,11 @@ function markaspot_open311_services_resources() {
         ),
       ),
       'index' => array(
+        /**
+         * @api {get} /requests Retrieves a list of requests
+         * @apiName Index
+         * @apiGroup Requests
+         */
         'help' => 'Retrieves a listing of requests',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
         // Callback in inc.file
@@ -379,6 +470,11 @@ function markaspot_open311_services_resources() {
     ),
     'services' => array(
       'retrieve' => array(
+        /**
+         * @api {get} /services/:service_code Retrieves service request category
+         * @apiName Retrieve
+         * @apiGroup Services
+         */
         'help' => 'Retrieves a service definition by servicecode (not yet implemented)',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
         'callback' => 'markaspot_open311_services_retrieve',
@@ -396,6 +492,13 @@ function markaspot_open311_services_resources() {
         ),
       ),
       'index' => array(
+        /**
+         * @api {get} /services Lists all available services
+         * @apiName Index
+         * @apiGroup Services
+         */
+
+
         'help' => 'Retrieves a listing of available services',
         'file' => array('file' => 'inc', 'module' => 'markaspot_open311'),
         // Callback in inc.file
