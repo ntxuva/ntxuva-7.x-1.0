@@ -295,9 +295,9 @@ function markaspot_open311_requests_create($data) {
 {
   "app_id": "8c492b14-4577-4478-9422-6a19a6553e55",
   "included_segments": ["All"],
-  "url": "$service_request_url",
-  "contents": {"en": "$service_request_description"},
-  "headings": {"en": "$service_request_title"}
+  "url": "http://www.google.com",
+  "contents": {"en": "1234"},
+  "headings": {"en": "1234"}
 }
 json;
 
@@ -322,10 +322,6 @@ json;
   $err = curl_error($curl);
 
   curl_close($curl);
-
-  if ($err) {
-    watchdog('OneSignal', "cURL Error #:" . $err);
-  }
 
   return $service_request;
 }
