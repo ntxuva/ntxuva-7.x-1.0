@@ -288,14 +288,16 @@ function markaspot_open311_requests_create($data) {
 
   $curl = curl_init();
   $service_request_url = 'http://www.mopa.co.mz/reports/'.$service_request[0]['service_request_id'];
+  $service_request_description = $service_request[0]['description'];
+  $service_request_id = 'Novo problema: '.$service_request[0]['service_request_id'];
 
   $json = <<<json
 {
   "app_id": "8c492b14-4577-4478-9422-6a19a6553e55",
   "included_segments": ["All"],
   "url": "$service_request_url",
-  "contents": {"en": "$service_request[0]['description']"},
-  "headings": {"en": "$service_request[0]['service_request_id']"}
+  "contents": {"en": "$service_request_description"},
+  "headings": {"en": "$service_request_id"}
 }
 json;
 
@@ -313,7 +315,6 @@ json;
       "cache-control: no-cache",
       "content-type: application/json",
       "postman-token: 8be9d18c-cc37-b68c-2e76-620fc6e7cbbb"
-    ),
   ));
 
   $response = curl_exec($curl);
