@@ -288,7 +288,7 @@ function markaspot_open311_requests_create($data) {
 
   $curl = curl_init();
   $service_request_url = 'http://www.mopa.co.mz/reports/'.$service_request[0]['service_request_id'];
-  $service_request_description = $service_request[0]['description'];
+  $service_request_description = $data['description'];
   $service_request_title = 'Novo problema: '.$service_request[0]['service_request_id'];
 
   $json = <<<json
@@ -322,6 +322,10 @@ json;
   $err = curl_error($curl);
 
   curl_close($curl);
+
+  if ($err) {
+    watchdog('OneSignal', "cURL Error #:" . $err);
+  }
 
   return $service_request;
 }
@@ -686,7 +690,6 @@ function markaspot_open311_node_map_request($node, $status, $parameters) {
   $request['validated'] = $node->field_validatedcmm[$node->language][0]['value'];
 
   if(isset($node->field_reaberto[$node->language][0]['value'])) $request['reopen'] = $node->field_reaberto[$node->language][0]['value'];
-
 
   return $request;
 }
