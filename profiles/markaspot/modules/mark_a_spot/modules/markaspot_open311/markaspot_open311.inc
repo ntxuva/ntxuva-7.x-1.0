@@ -36,7 +36,7 @@ function markaspot_open311_find_locations($parameters) {
 
 
   if (isset($parameters['neighbourhood'])) {
-    $query->fieldCondition('field_nbhood', 'value', $parameters['neighbourhood'], '=');
+    $query->fieldCondition('field_neighbourhood', 'value', $parameters['neighbourhood'], '=');
   }
 
   if (isset($parameters['district'])) {
