@@ -63,6 +63,10 @@ function markaspot_open311_find_locations($parameters) {
     $query->fieldCondition('field_area', 'value', $parameters['area'], '=');
   }
 
+  if (isset($parameters['quarter'])) {
+    $query->fieldCondition('field_quarter', 'value', $parameters['quarter'], '=');
+  }
+
 
   $result = $query->execute();
 
@@ -124,7 +128,7 @@ function markaspot_open311_location_map_request($node) {
 
   if (isset($node->field_area[$node->language][0])) $location['area'] = $node->field_area[$node->language][0]['value'];
 
-  foreach ($node->field_neighbourhood[$node->language] as $nbh) {
+  foreach ($node->field_nbhood[$node->language] as $nbh) {
     $location['neighbourhood'][] = $nbh['value'];
   }
 
@@ -150,7 +154,7 @@ function markaspot_open311_people_retrieve($request_id, $parameters) {
     }
   }
 
-  $bairro_tid = markaspot_open311_neighbourhood_map_tax($node->field_neighbourhood[$node->language][0]['value']);
+  $bairro_tid = markaspot_open311_neighbourhood_map_tax($node->field_nbhood[$node->language][0]['value']);
 
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
@@ -492,7 +496,7 @@ function markaspot_open311_requests_index($page, $parameters) {
   }
 
   if (isset($parameters['neighbourhood'])) {
-    $query->fieldCondition('field_neighbourhood', 'value', $parameters['neighbourhood'], '=');
+    $query->fieldCondition('field_nbhood', 'value', $parameters['neighbourhood'], '=');
   }
 
   if (isset($parameters['address_id'])) {
@@ -640,13 +644,10 @@ function markaspot_open311_node_map_request($node, $status, $parameters) {
     $request['media_url'] = $image_uri;
   }
   // Non Open311 compliant fields can be added here:
-  if (isset($node->field_neighbourhood[$node->language][0]['value'])) $request['neighbourhood'] = $node->field_neighbourhood[$node->language][0]['value'];
+  if (isset($node->field_nbhood[$node->language][0]['value'])) $request['neighbourhood'] = $node->field_nbhood[$node->language][0]['value'];
   if (isset($parameters['phone_key'])) if ($parameters['phone_key']==666554 && isset($node->field_phone[$node->language][0]['value'])) $request['phone'] = $node->field_phone[$node->language][0]['value'];
-
   $request['validated'] = $node->field_validatedcmm[$node->language][0]['value'];
-
   $request['reopen'] = $node->field_reaberto[$node->language][0]['value'];
-
 
   return $request;
 }
@@ -709,10 +710,10 @@ function markaspot_open311_request_map_node($request) {
     $params = array();
     $params['id']=$node->field_address_id[$node->language][0]['value'];
     $results = markaspot_open311_find_locations($params);
-    if($results) $node->field_neighbourhood[$node->language][0]['value'] = $results[0]['neighbourhood'][0];
+    if($results) $node->field_nbhood[$node->language][0]['value'] = $results[0]['neighbourhood'][0];
   }
 
-  if (!isset($node->field_neighbourhood[$node->language][0]['value']) && isset($request->neighbourhood)) $node->field_neighbourhood[$node->language][0]['value'] = $request->neighbourhood;
+  if (!isset($node->field_nbhood[$node->language][0]['value']) && isset($request->neighbourhood)) $node->field_nbhood[$node->language][0]['value'] = $request->neighbourhood;
 
   if (isset($request->email)) $node->field_e_mail[$node->language][0]['value'] = $request->email;
   if (isset($request->phone)) $node->field_phone[$node->language][0]['value'] = $request->phone;
