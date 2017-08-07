@@ -286,43 +286,6 @@ function markaspot_open311_requests_create($data) {
     $service_request[0]['service_notice'] = "";
   }
 
-  $curl = curl_init();
-  $service_request_url = 'http://www.mopa.co.mz/reports/'.$service_request[0]['service_request_id'];
-  $service_request_description = $data['description'];
-  $service_request_title = 'Novo problema: '.$service_request[0]['service_request_id'];
-
-  $json = <<<json
-{
-  "app_id": "8c492b14-4577-4478-9422-6a19a6553e55",
-  "included_segments": ["All"],
-  "url": "http://www.google.com",
-  "contents": {"en": "1234"},
-  "headings": {"en": "1234"}
-}
-json;
-
-  curl_setopt_array($curl, array(
-    CURLOPT_URL => "https://onesignal.com/api/v1/notifications",
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_ENCODING => "",
-    CURLOPT_MAXREDIRS => 10,
-    CURLOPT_TIMEOUT => 30,
-    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-    CURLOPT_CUSTOMREQUEST => "POST",
-    CURLOPT_POSTFIELDS => $json,
-    CURLOPT_HTTPHEADER => array(
-      "authorization: Basic YjgzZGEzNjgtOWYxZS00MTBkLTliNGMtODhhOGY2NDQ3ZGU4",
-      "cache-control: no-cache",
-      "content-type: application/json",
-      "postman-token: 8be9d18c-cc37-b68c-2e76-620fc6e7cbbb"
-    ),
-  ));
-
-  $response = curl_exec($curl);
-  $err = curl_error($curl);
-
-  curl_close($curl);
-
   return $service_request;
 }
 
