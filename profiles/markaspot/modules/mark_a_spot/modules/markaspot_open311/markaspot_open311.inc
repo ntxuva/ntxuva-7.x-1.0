@@ -36,7 +36,7 @@ function markaspot_open311_find_locations($parameters) {
 
 
   if (isset($parameters['neighbourhood'])) {
-    $query->fieldCondition('field_neighbourhood', 'value', $parameters['neighbourhood'], '=');
+    $query->fieldCondition('field_nbhood', 'value', $parameters['neighbourhood'], '=');
   }
 
   if (isset($parameters['district'])) {
@@ -128,7 +128,7 @@ function markaspot_open311_location_map_request($node) {
 
   if (isset($node->field_area[$node->language][0])) $location['area'] = $node->field_area[$node->language][0]['value'];
 
-  foreach ($node->field_neighbourhood[$node->language] as $nbh) {
+  foreach ($node->field_nbhood[$node->language] as $nbh) {
     $location['neighbourhood'][] = $nbh['value'];
   }
 
@@ -154,7 +154,7 @@ function markaspot_open311_people_retrieve($request_id, $parameters) {
     }
   }
 
-  $bairro_tid = markaspot_open311_neighbourhood_map_tax($node->field_neighbourhood[$node->language][0]['value']);
+  $bairro_tid = markaspot_open311_neighbourhood_map_tax($node->field_nbhood[$node->language][0]['value']);
 
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
@@ -443,7 +443,7 @@ function markaspot_open311_requests_index($page, $parameters) {
   }
 
   if (isset($parameters['neighbourhood'])) {
-    $query->fieldCondition('field_neighbourhood', 'value', $parameters['neighbourhood'], '=');
+    $query->fieldCondition('field_nbhood', 'value', $parameters['neighbourhood'], '=');
   }
 
   if (isset($parameters['address_id'])) {
