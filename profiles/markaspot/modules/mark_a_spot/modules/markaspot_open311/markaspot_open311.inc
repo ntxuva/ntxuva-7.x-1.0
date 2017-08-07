@@ -287,13 +287,11 @@ function markaspot_open311_requests_create($data) {
   }
 
 
-  $json->app_id =  "8c492b14-4577-4478-9422-6a19a6553e55";
-  $json->included_segments = ["All"];
-  $json->url = "http://www.mopa.co.mz/reports/".$service_request[0]['service_request_id'];
-  $json->contents['en'] = $data['description'];
-  $json->headings['en'] = "Novo problema no MOPA";
-
-  $jsonPOSTfields = json_encode($json);
+  $jsonPOSTfields =  "{\n
+    \"app_id\": \"8c492b14-4577-4478-9422-6a19a6553e55\",\n
+    \"included_segments\": [\"All\"],\n
+    \"url\": http://www.mopa.co.mz/reports/".$service_request[0]['service_request_id'].",\n
+    \"contents\": {\"en\": \"Novo problema no MOPA\"}\n}";
 
   $curl = curl_init();
 
