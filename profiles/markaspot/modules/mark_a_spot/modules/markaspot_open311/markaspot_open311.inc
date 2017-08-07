@@ -685,7 +685,7 @@ function markaspot_open311_node_map_request($node, $status, $parameters) {
 
   $request['validated'] = $node->field_validatedcmm[$node->language][0]['value'];
 
-  $request['reopen'] = $node->field_reaberto[$node->language][0]['value'];
+  if(isset($node->field_reaberto[$node->language][0]['value'])) $request['reopen'] = $node->field_reaberto[$node->language][0]['value'];
 
 
   return $request;
