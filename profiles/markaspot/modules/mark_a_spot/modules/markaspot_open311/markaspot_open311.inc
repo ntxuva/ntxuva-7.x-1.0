@@ -132,6 +132,8 @@ function markaspot_open311_location_map_request($node) {
     $location['neighbourhood'][] = $nbh['value'];
   }
 
+  if (isset($node->field_quarter[$node->language][0]['value'])) $location['quarter'] = $node->field_quarter[$node->language][0]['value'];
+
   return $location;
 }
 
