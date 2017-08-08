@@ -286,6 +286,41 @@ function markaspot_open311_requests_create($data) {
     $service_request[0]['service_notice'] = "";
   }
 
+
+  $onesignal_data = array(
+    "app_id" => "8c492b14-4577-4478-9422-6a19a6553e55",
+    "included_segments" => array("All"),
+    "url" => "http://www.mopa.co.mz/reports/".$service_request[0]['service_request_id'],
+    "contents" => ["en" => $node->body[$node->language][0]['value']],
+    "header" => ["en" => "Novo problema no MOPA".$service_request[0]['service_request_id']]
+    );
+
+  $data_string = json_encode($onesignal_data);
+
+  $curl = curl_init();
+
+  curl_setopt_array($curl, array(
+    CURLOPT_URL => "https://onesignal.com/api/v1/notifications",
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => "",
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 30,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => "POST",
+    CURLOPT_POSTFIELDS => $data_string,
+    CURLOPT_HTTPHEADER => array(
+      "authorization: Basic YjgzZGEzNjgtOWYxZS00MTBkLTliNGMtODhhOGY2NDQ3ZGU4",
+      "cache-control: no-cache",
+      "content-type: application/json",
+      "postman-token: f710326e-e63e-fa8f-d4b7-080d26eba53e"
+    ),
+  ));
+
+  $response = curl_exec($curl);
+  $err = curl_error($curl);
+
+  curl_close($curl);
+
   return $service_request;
 }
 
