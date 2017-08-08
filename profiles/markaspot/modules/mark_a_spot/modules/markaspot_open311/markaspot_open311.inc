@@ -291,7 +291,7 @@ function markaspot_open311_requests_create($data) {
     "app_id" => "8c492b14-4577-4478-9422-6a19a6553e55",
     "included_segments" => array("All"),
     "url" => "http://www.mopa.co.mz/reports/".$service_request[0]['service_request_id'],
-    "contents" => ["en" => "Novo problema no MOPA, verificar o problema."],
+    "contents" => ["en" => $node->body[$node->language][0]['value']],
     "header" => ["en" => "Novo problema no MOPA".$service_request[0]['service_request_id']]
     );
 
@@ -307,7 +307,7 @@ function markaspot_open311_requests_create($data) {
     CURLOPT_TIMEOUT => 30,
     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
     CURLOPT_CUSTOMREQUEST => "POST",
-    CURLOPT_POSTFIELDS => array($data_string),
+    CURLOPT_POSTFIELDS => $data_string,
     CURLOPT_HTTPHEADER => array(
       "authorization: Basic YjgzZGEzNjgtOWYxZS00MTBkLTliNGMtODhhOGY2NDQ3ZGU4",
       "cache-control: no-cache",
