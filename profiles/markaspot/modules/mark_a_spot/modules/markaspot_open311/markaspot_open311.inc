@@ -287,11 +287,13 @@ function markaspot_open311_requests_create($data) {
   }
 
 
-  $onesignal_data = array("app_id" => "8c492b14-4577-4478-9422-6a19a6553e55",
+  $onesignal_data = array(
+    "app_id" => "8c492b14-4577-4478-9422-6a19a6553e55",
     "included_segments" => array("All"),
     "url" => "http://www.mopa.co.mz/reports/".$service_request[0]['service_request_id'],
-    "contents" => ["en" => $data->description],
-    "header" => ["en" => "Novo problema no MOPA".$service_request[0]['service_request_id']]);
+    "contents" => ["en" => $node->body[$node->language][0]['value']],
+    "header" => ["en" => "Novo problema no MOPA".$service_request[0]['service_request_id']]
+    );
 
   $data_string = json_encode($onesignal_data);
 
