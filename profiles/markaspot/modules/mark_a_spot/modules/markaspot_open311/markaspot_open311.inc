@@ -796,6 +796,7 @@ function markaspot_open311_tax_map_service($taxonomy_term) {
   $service['metadata'] = "false";
   $service['type'] = 'realtime';
   $service['description'] = $taxonomy_term->description;
+  $service['active'] = $taxonomy_term->field_active[$lang][0]['value'];
   foreach ($taxonomy_term->field_tags[$lang] as $tag) {
     $service['keywords'][] = taxonomy_term_load($tag['tid'])->name;
   }
