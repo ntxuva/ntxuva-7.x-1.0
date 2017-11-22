@@ -367,7 +367,11 @@ var lang_pt = {
                 return;
 
             $.ajax({
+<<<<<<< HEAD
                 url: '/georeport/v2/requests.xml?start_date='+defaultStartDate, //default to load requets for the last 6 months
+=======
+                url: 'georeport/v2/requests.json?start_date=2017-11-22',
+>>>>>>> replace xml for json
                 success: function(res){
                     _self.res = res;
                     _self.parse();
@@ -408,11 +412,13 @@ var lang_pt = {
             this.line_chart = {};
             this.dates      = {};
 
-            $('request', this.res).each(function(index, request){
-                var service_name = $('service_name', request).text(),
-                    status_name  = $('service_notice', request).text(),
-                    address_name = $('neighbourhood', request).text(),
-                    req_datetime = $('requested_datetime', request).text(),
+            window.a=this.res;
+            this.res.forEach(function(request, index){
+               // console.log(request)
+                var service_name = request.service_name,
+                    status_name  = request.service_notice,
+                    address_name = request.neighbourhood,
+                    req_datetime = request.requested_datetime,
 
                     serviceNameEncode = encodeURIComponent(service_name),
                     statusNameEncode  = encodeURIComponent(status_name),
@@ -808,7 +814,11 @@ var lang_pt = {
                 return;
 
             $.ajax({
+<<<<<<< HEAD
                 url: '/mopa/public/georeport/v2/requests.xml?start_date='+defaultStartDate,
+=======
+                url: 'georeport/v2/requests.json?start_date=2017-22-11',
+>>>>>>> replace xml for json
                 success: function(res){
                     _self.res = res;
                     _self.hooks();
