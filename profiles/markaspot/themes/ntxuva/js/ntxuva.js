@@ -276,7 +276,6 @@ var lang_pt = {
                     _self.parsePoints();
                 }
             });
-
             this.$neighbourhoodSelect.on({
                 change: function(event){
                     _self.parsePoints();
@@ -367,11 +366,7 @@ var lang_pt = {
                 return;
 
             $.ajax({
-<<<<<<< HEAD
-                url: '/georeport/v2/requests.xml?start_date='+defaultStartDate, //default to load requets for the last 6 months
-=======
-                url: 'georeport/v2/requests.json?start_date=2017-11-22',
->>>>>>> replace xml for json
+                url: '/georeport/v2/requests.json?start_date='+defaultStartDate, //default to load requets for the last 6 months
                 success: function(res){
                     _self.res = res;
                     _self.parse();
@@ -414,7 +409,6 @@ var lang_pt = {
 
             window.a=this.res;
             this.res.forEach(function(request, index){
-               // console.log(request)
                 var service_name = request.service_name,
                     status_name  = request.service_notice,
                     address_name = request.neighbourhood,
@@ -490,7 +484,7 @@ var lang_pt = {
                     var req_date  = new Date(req_datetime),
                         req_year  = req_date.getFullYear(),
                         req_month = req_date.getMonth();
-
+//update this to include years for not loaded requests
                     if (!_self.dates[req_year]) {
                         _self.dates[req_year] = [];   
                         for (var i = 0, l = lang_pt.months.length; i < l; i++) {
@@ -598,20 +592,20 @@ var lang_pt = {
             }
 
             if (activeMonth.length) {
+                var b=activeMonth.data('id');
                 _data = _data[activeMonth.data('id')];
                 lineGraphData.labels = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5'];
                 //loop for each request for the selected month
                 for (var i = 0, l = _data.length, c; i < l; i++) {
                     c = _data[i];
-                    requestedDate = new Date($('requested_datetime', c).text());
+                    requestedDate = new Date(c.requested_datetime);
                     parseRequestData(c, requestedDate.getMonthWeek() - 1);
                 }
             }
             else {
                 //loop throught each month
-                for (var i = 0, l = _data.length, c; i < l; i++) {
+                for (var i = 1, l = _data.length, c; i < l; i++) {
                     c = _data[i];
-
                     if (!c)
                         continue;
 
@@ -623,9 +617,9 @@ var lang_pt = {
             }
 
             function parseRequestData(reqData, arrayIndex){
-                serviceName = $('service_name', reqData).text();
-                statusName  = $('service_notice', reqData).text();
-                addressName = $('neighbourhood', reqData).text();
+                serviceName = reqData.service_name;
+                statusName  = reqData.service_notice;
+                addressName = reqData.neighbourhood;
 
                 serviceNameEncode = encodeURIComponent(serviceName);
                 statusNameEncode  = encodeURIComponent(statusName);
@@ -735,7 +729,8 @@ var lang_pt = {
             if (!this.inited) {
                 this.$yearSelect.append(yearsDD.join(''));
             }
-
+            //clear the list first
+            this.$monthsList.empty();
             this.$monthsList.append(monthsList.join(''));
         },
         hooks: function(){
@@ -761,6 +756,12 @@ var lang_pt = {
                 }
             });
 
+            console.log('yo');
+            this.$yearSelect.on({
+                change: function(event){
+                    _self.generateDates();
+                }
+            })
             this.$statusSelect.on({
                 change: function(event){
                     _self.parse();
@@ -814,11 +815,7 @@ var lang_pt = {
                 return;
 
             $.ajax({
-<<<<<<< HEAD
-                url: '/mopa/public/georeport/v2/requests.xml?start_date='+defaultStartDate,
-=======
-                url: 'georeport/v2/requests.json?start_date=2017-22-11',
->>>>>>> replace xml for json
+                url: '/mopa/public/georeport/v2/requests.json?start_date='+defaultStartDate,
                 success: function(res){
                     _self.res = res;
                     _self.hooks();
