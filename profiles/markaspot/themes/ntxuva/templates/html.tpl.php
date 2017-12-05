@@ -18,7 +18,7 @@
     <script src="js/excanvas.compiled.js"></script>
   <![endif]-->
   <?php print $scripts; ?>
-  <link href='http://fonts.googleapis.com/css?family=Lato:300,400,700' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Lato:300,400,700' rel='stylesheet' type='text/css'>
    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async='async'></script>
   <script>
     var OneSignal = window.OneSignal || [];
