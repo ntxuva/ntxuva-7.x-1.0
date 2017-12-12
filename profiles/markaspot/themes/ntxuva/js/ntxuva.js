@@ -44,7 +44,7 @@ var lang_pt = {
 };
 
 (function($) {
-    var date= new Date();
+    var date = new Date();
     date.setDate(date.getDate()-180); // simplest estimate of 6 months
     var defaultStartDate = date.getFullYear()+'-'+date.getMonth()+'-'+date.getDate();
     var InqueriesReceive = {
@@ -484,7 +484,7 @@ var lang_pt = {
                     var req_date  = new Date(req_datetime),
                         req_year  = req_date.getFullYear(),
                         req_month = req_date.getMonth();
-//update this to include years for not loaded requests
+// TODO: update this to include years for not loaded requests
                     if (!_self.dates[req_year]) {
                         _self.dates[req_year] = [];   
                         for (var i = 0, l = lang_pt.months.length; i < l; i++) {
@@ -756,7 +756,6 @@ var lang_pt = {
                 }
             });
 
-            console.log('yo');
             this.$yearSelect.on({
                 change: function(event){
                     _self.generateDates();
