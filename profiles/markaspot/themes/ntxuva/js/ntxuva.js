@@ -407,7 +407,6 @@ var lang_pt = {
             this.line_chart = {};
             this.dates      = {};
 
-            window.a=this.res;
             this.res.forEach(function(request, index){
                 var service_name = request.service_name,
                     status_name  = request.service_notice,
@@ -592,7 +591,6 @@ var lang_pt = {
             }
 
             if (activeMonth.length) {
-                var b=activeMonth.data('id');
                 _data = _data[activeMonth.data('id')];
                 lineGraphData.labels = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5'];
                 //loop for each request for the selected month
@@ -604,7 +602,7 @@ var lang_pt = {
             }
             else {
                 //loop throught each month
-                for (var i = 1, l = _data.length, c; i < l; i++) {
+                for (var i = 0, l = _data.length, c; i < l; i++) {
                     c = _data[i];
                     if (!c)
                         continue;
@@ -814,7 +812,7 @@ var lang_pt = {
                 return;
 
             $.ajax({
-                url: '/mopa/public/georeport/v2/requests.json?start_date='+defaultStartDate,
+                url: '/georeport/v2/requests.json?start_date='+defaultStartDate,
                 success: function(res){
                     _self.res = res;
                     _self.hooks();
