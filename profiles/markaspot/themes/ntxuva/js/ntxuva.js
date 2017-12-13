@@ -44,6 +44,9 @@ var lang_pt = {
 };
 
 (function($) {
+    var date = new Date();
+    date.setDate(date.getDate()-180); // simplest estimate of 6 months
+    var defaultStartDate = date.getFullYear()+'-'+date.getMonth()+'-'+date.getDate();
     var InqueriesReceive = {
         inited: false,
         replies: [],
@@ -273,7 +276,6 @@ var lang_pt = {
                     _self.parsePoints();
                 }
             });
-
             this.$neighbourhoodSelect.on({
                 change: function(event){
                     _self.parsePoints();
@@ -360,12 +362,11 @@ var lang_pt = {
         },
         init: function(){
             var _self = this;
-
             if (!$('body').hasClass('front'))
                 return;
 
             $.ajax({
-                url: '/georeport/v2/requests.xml?start_date=2016-01-01',
+                url: '/georeport/v2/requests.json?start_date='+defaultStartDate, //default to load requets for the last 6 months
                 success: function(res){
                     _self.res = res;
                     _self.parse();
@@ -406,11 +407,11 @@ var lang_pt = {
             this.line_chart = {};
             this.dates      = {};
 
-            $('request', this.res).each(function(index, request){
-                var service_name = $('service_name', request).text(),
-                    status_name  = $('service_notice', request).text(),
-                    address_name = $('neighbourhood', request).text(),
-                    req_datetime = $('requested_datetime', request).text(),
+            this.res.forEach(function(request, index){
+                var service_name = request.service_name,
+                    status_name  = request.service_notice,
+                    address_name = request.neighbourhood,
+                    req_datetime = request.requested_datetime,
 
                     serviceNameEncode = encodeURIComponent(service_name),
                     statusNameEncode  = encodeURIComponent(status_name),
@@ -482,7 +483,7 @@ var lang_pt = {
                     var req_date  = new Date(req_datetime),
                         req_year  = req_date.getFullYear(),
                         req_month = req_date.getMonth();
-
+// TODO: update this to include years for not loaded requests
                     if (!_self.dates[req_year]) {
                         _self.dates[req_year] = [];   
                         for (var i = 0, l = lang_pt.months.length; i < l; i++) {
@@ -595,7 +596,7 @@ var lang_pt = {
                 //loop for each request for the selected month
                 for (var i = 0, l = _data.length, c; i < l; i++) {
                     c = _data[i];
-                    requestedDate = new Date($('requested_datetime', c).text());
+                    requestedDate = new Date(c.requested_datetime);
                     parseRequestData(c, requestedDate.getMonthWeek() - 1);
                 }
             }
@@ -603,7 +604,6 @@ var lang_pt = {
                 //loop throught each month
                 for (var i = 0, l = _data.length, c; i < l; i++) {
                     c = _data[i];
-
                     if (!c)
                         continue;
 
@@ -615,9 +615,9 @@ var lang_pt = {
             }
 
             function parseRequestData(reqData, arrayIndex){
-                serviceName = $('service_name', reqData).text();
-                statusName  = $('service_notice', reqData).text();
-                addressName = $('neighbourhood', reqData).text();
+                serviceName = reqData.service_name;
+                statusName  = reqData.service_notice;
+                addressName = reqData.neighbourhood;
 
                 serviceNameEncode = encodeURIComponent(serviceName);
                 statusNameEncode  = encodeURIComponent(statusName);
@@ -727,7 +727,8 @@ var lang_pt = {
             if (!this.inited) {
                 this.$yearSelect.append(yearsDD.join(''));
             }
-
+            //clear the list first
+            this.$monthsList.empty();
             this.$monthsList.append(monthsList.join(''));
         },
         hooks: function(){
@@ -753,6 +754,11 @@ var lang_pt = {
                 }
             });
 
+            this.$yearSelect.on({
+                change: function(event){
+                    _self.generateDates();
+                }
+            })
             this.$statusSelect.on({
                 change: function(event){
                     _self.parse();
@@ -806,7 +812,7 @@ var lang_pt = {
                 return;
 
             $.ajax({
-                url: '/georeport/v2/requests.xml',
+                url: '/georeport/v2/requests.json?start_date='+defaultStartDate,
                 success: function(res){
                     _self.res = res;
                     _self.hooks();
