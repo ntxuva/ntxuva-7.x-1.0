@@ -44,6 +44,9 @@ var lang_pt = {
 };
 
 (function($) {
+    var date= new Date();
+    date.setDate(date.getDate()-180); // simplest estimate of 6 months
+    var defaultStartDate = date.getFullYear()+'-'+date.getMonth()+'-'+date.getDate();
     var InqueriesReceive = {
         inited: false,
         replies: [],
@@ -360,12 +363,11 @@ var lang_pt = {
         },
         init: function(){
             var _self = this;
-
             if (!$('body').hasClass('front'))
                 return;
 
             $.ajax({
-                url: '/georeport/v2/requests.xml?start_date=2016-01-01',
+                url: '/georeport/v2/requests.xml?start_date='+defaultStartDate, //default to load requets for the last 6 months
                 success: function(res){
                     _self.res = res;
                     _self.parse();
@@ -806,7 +808,7 @@ var lang_pt = {
                 return;
 
             $.ajax({
-                url: '/georeport/v2/requests.xml',
+                url: '/mopa/public/georeport/v2/requests.xml?start_date='+defaultStartDate,
                 success: function(res){
                     _self.res = res;
                     _self.hooks();
