@@ -1,4 +1,4 @@
-if (typeof console.log != 'undefined')    
+if (typeof console.log != 'undefined')
     log = console.log;
 
 if (!Array.prototype.indexOf) {
@@ -37,6 +37,23 @@ Date.prototype.getMonthWeek = function(){
     return Math.ceil((this.getDate() + firstDay)/7);
 };
 
+if (!String.prototype.padStart) {
+    String.prototype.padStart = function padStart(targetLength,padString) {
+        targetLength = targetLength>>0; //truncate if number or convert non-number to 0;
+        padString = String((typeof padString !== 'undefined' ? padString : ' '));
+        if (this.length > targetLength) {
+            return String(this);
+        }
+        else {
+            targetLength = targetLength-this.length;
+            if (targetLength > padString.length) {
+                padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
+            }
+            return padString.slice(0,targetLength) + String(this);
+        }
+    };
+}
+
 // Chart.defaults.global.animation = false;
 
 var lang_pt = {
@@ -44,6 +61,9 @@ var lang_pt = {
 };
 
 (function($) {
+    var date = new Date();
+    date.setDate(date.getDate() - 180); // simplest estimate of 6 months
+    var defaultStartDate = date.getFullYear() + '-' + String(date.getMonth()).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
     var InqueriesReceive = {
         inited: false,
         replies: [],
@@ -96,7 +116,7 @@ var lang_pt = {
             this.getReplies();
         }
     };
-    
+
     var InqueriesSent = {
         inited: false,
         messages: [],
@@ -199,7 +219,7 @@ var lang_pt = {
         },
         parsePhones: function(){
             var _self = this;
-            
+
             if (!_self.inited)
                 return;
 
@@ -212,7 +232,7 @@ var lang_pt = {
                 console.log("No district, neighbourhood or point, ", "district: ", district, ", neighbourhoods: ", neighbourhood, ", point:", point);
                 return;
             }
-            
+
             if (!_self.districts[district-1].neighbourhoods[neighbourhood-1] || !_self.districts[district-1].neighbourhoods[neighbourhood-1].points[point-1]){
                 console.log("Neighborhood", _self.districts[district-1].neighbourhoods[neighbourhood-1]);
                 console.log("Point", _self.districts[district-1].neighbourhoods[neighbourhood-1].points[point-1]);
@@ -273,7 +293,6 @@ var lang_pt = {
                     _self.parsePoints();
                 }
             });
-
             this.$neighbourhoodSelect.on({
                 change: function(event){
                     _self.parsePoints();
@@ -360,12 +379,11 @@ var lang_pt = {
         },
         init: function(){
             var _self = this;
-
             if (!$('body').hasClass('front'))
                 return;
 
             $.ajax({
-                url: '/georeport/v2/requests.xml?start_date=2016-01-01',
+                url: '/georeport/v2/requests.json?start_date=' + defaultStartDate,
                 success: function(res){
                     _self.res = res;
                     _self.parse();
@@ -406,11 +424,11 @@ var lang_pt = {
             this.line_chart = {};
             this.dates      = {};
 
-            $('request', this.res).each(function(index, request){
-                var service_name = $('service_name', request).text(),
-                    status_name  = $('service_notice', request).text(),
-                    address_name = $('neighbourhood', request).text(),
-                    req_datetime = $('requested_datetime', request).text(),
+            this.res.forEach(function(request, index){
+                var service_name = request.service_name,
+                    status_name  = request.service_notice,
+                    address_name = request.neighbourhood,
+                    req_datetime = request.requested_datetime,
 
                     serviceNameEncode = encodeURIComponent(service_name),
                     statusNameEncode  = encodeURIComponent(status_name),
@@ -482,9 +500,9 @@ var lang_pt = {
                     var req_date  = new Date(req_datetime),
                         req_year  = req_date.getFullYear(),
                         req_month = req_date.getMonth();
-
+										// TODO: update this to include years for not loaded requests
                     if (!_self.dates[req_year]) {
-                        _self.dates[req_year] = [];   
+                        _self.dates[req_year] = [];
                         for (var i = 0, l = lang_pt.months.length; i < l; i++) {
                             _self.dates[req_year].push({name: lang_pt.months[i], active: false});
                         }
@@ -513,7 +531,7 @@ var lang_pt = {
             this.renderGraphs();
 
             if (serviceSelected || statusSelected || addressSelected) {
-                this.renderLineGraph();            
+                this.renderLineGraph();
             }
         },
         renderLineGraph: function(){
@@ -595,7 +613,7 @@ var lang_pt = {
                 //loop for each request for the selected month
                 for (var i = 0, l = _data.length, c; i < l; i++) {
                     c = _data[i];
-                    requestedDate = new Date($('requested_datetime', c).text());
+                    requestedDate = new Date(c.requested_datetime);
                     parseRequestData(c, requestedDate.getMonthWeek() - 1);
                 }
             }
@@ -603,7 +621,6 @@ var lang_pt = {
                 //loop throught each month
                 for (var i = 0, l = _data.length, c; i < l; i++) {
                     c = _data[i];
-
                     if (!c)
                         continue;
 
@@ -614,15 +631,15 @@ var lang_pt = {
                 }
             }
 
-            function parseRequestData(reqData, arrayIndex){
-                serviceName = $('service_name', reqData).text();
-                statusName  = $('service_notice', reqData).text();
-                addressName = $('neighbourhood', reqData).text();
+            function parseRequestData(requestData, arrayIndex) {
+                serviceName = requestData.service_name;
+                statusName  = requestData.service_notice;
+                addressName = requestData.neighbourhood;
 
                 serviceNameEncode = encodeURIComponent(serviceName);
                 statusNameEncode  = encodeURIComponent(statusName);
                 addressNameEncode = encodeURIComponent(addressName);
-                
+
                 if (datasets[serviceNameEncode]) {
                     if (!datasets[serviceNameEncode].data[arrayIndex])
                         datasets[serviceNameEncode].data[arrayIndex] = 1;
@@ -658,13 +675,13 @@ var lang_pt = {
                             dataset.data[i] = 0;
                     }
                 }
-                
+
                 return dataset;
             });
 
             if (!lineGraphData.datasets.length)
                 return;
-            
+
             this.timelineChart = new Chart(this.$timelineChart.get(0).getContext("2d")).Line(lineGraphData, {
                                     bezierCurve: false,
                                     multiTooltipTemplate: "<%if (datasetLabel){%><%=datasetLabel%>: <%}%><%= value %>"
@@ -694,7 +711,7 @@ var lang_pt = {
             });
             this.statusPieChart.update();
             this.$statusChart.find('.chart-legend:eq(0)').html(this.generateLegend(this.chartDataMapping.status).join(''));
-            
+
             //address chart
             $.each(this.chartDataMapping.address, function(i, c){
                 _self.addressPieChart.addData(c);
@@ -728,6 +745,7 @@ var lang_pt = {
                 this.$yearSelect.append(yearsDD.join(''));
             }
 
+            this.$monthsList.empty();
             this.$monthsList.append(monthsList.join(''));
         },
         hooks: function(){
@@ -753,6 +771,11 @@ var lang_pt = {
                 }
             });
 
+            this.$yearSelect.on({
+                change: function(event){
+                    _self.generateDates();
+                }
+            })
             this.$statusSelect.on({
                 change: function(event){
                     _self.parse();
@@ -806,7 +829,7 @@ var lang_pt = {
                 return;
 
             $.ajax({
-                url: '/georeport/v2/requests.xml',
+                url: '/georeport/v2/requests.json?start_date=' + defaultStartDate,
                 success: function(res){
                     _self.res = res;
                     _self.hooks();
@@ -943,7 +966,7 @@ var lang_pt = {
                 }
             });
     });
-    
+
     $(window).load(function(){
         $('#loading').fadeOut(0);
     });
