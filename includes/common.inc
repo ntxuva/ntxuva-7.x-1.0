@@ -813,7 +813,7 @@ function drupal_http_request($url, array $options = array()) {
     'data' => NULL,
     'max_redirects' => 3,
     'timeout' => 30.0,
-    'context' => NULL,
+    'context' => stream_context_create(array('ssl'=>array('verify_peer' => false, 'capath'=> ini_get('openssl.capath'),))),
   );
 
   // Merge the default headers.
